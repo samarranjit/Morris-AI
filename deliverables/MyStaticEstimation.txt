@@ -1,0 +1,18 @@
+Improved static estimation for CS4346 Morris AI
+Replace this outline with the team's explanation before submission.
+
+1. Features used
+
+2. Why these features were selected
+
+3. How the features are combined
+
+4. Why this evaluation is stronger than the handout estimator
+
+The handout estimator is piece difference in the opening, and in the
+midgame/endgame it is 1000 times the piece difference minus the number of
+Black moves, with 10000 / -10000 for the terminal cases.
+
+The project handout lists optional features: piece difference, number of
+moves, mobility, completed mills, potential mills, blocked opponent pieces,
+and useful squares. Use the ones that have a reason in the game.

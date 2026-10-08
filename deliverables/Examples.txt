@@ -1,0 +1,45 @@
+Examples for CS4346 Morris AI
+Fill this file before submission. The project handout requires the cases below.
+
+1. Alpha-beta evaluates fewer positions than minimax
+
+Need at least two positions. For each one, record the input board, the depth,
+the move both algorithms chose, the shared minimax estimate, and the two
+evaluation counts.
+
+Case 1
+Board:
+Depth:
+Move:
+MINIMAX estimate:
+Positions evaluated by minimax:
+Positions evaluated by alpha-beta:
+
+Case 2
+Board:
+Depth:
+Move:
+MINIMAX estimate:
+Positions evaluated by minimax:
+Positions evaluated by alpha-beta:
+
+2. Improved estimator chooses a different move
+
+Need at least two positions. For each one, record the baseline move, the
+improved move, and why the improved move is preferred.
+
+Case 1
+Board:
+Phase:
+Depth:
+Baseline move:
+Improved move:
+Why the improved move is better:
+
+Case 2
+Board:
+Phase:
+Depth:
+Baseline move:
+Improved move:
+Why the improved move is better:
