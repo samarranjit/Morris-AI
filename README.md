@@ -30,9 +30,33 @@ MINIMAX estimate: <value>
 
 The third opens the interactive tournament console.
 
+## The game
+
+<p align="center">
+  <img src="docs/images/board.png" alt="Morris Game, Variant board with its 23 labeled locations" width="420">
+</p>
+
+The board has 23 locations. Unlike standard Nine Men's Morris, it has four corner diagonals, no `d2` or `d3`, and an open center. Each player has 9 pieces, and the game has three phases:
+
+- **Opening:** players take turns placing their 9 pieces on empty locations.
+- **Midgame:** players take turns sliding one piece along a line to an adjacent empty location.
+- **Endgame:** a player with only three pieces may hop to any empty location.
+
+Three pieces of one color on a straight line form a **mill**, including the diagonals. Closing a mill removes one opposing piece that is not in a mill. A player wins by reducing the opponent to two pieces or leaving the opponent with no legal move.
+
 ## Board representation
 
-A position is a 23-character string. `W` is a White piece, `B` a Black piece, and `x` an empty location. Index 0 is `a0` at the bottom-left, and the string reads left to right, bottom to top. [docs/board.md](docs/board.md) lists every location, its neighbors, and its mills.
+A position is a 23-character string. `W` is a White piece, `B` a Black piece, and `x` an empty location. The string reads left to right, bottom to top, using this index order from the handout:
+
+| Index | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Location | a0 | d0 | g0 | b1 | d1 | f1 | c2 | e2 | a3 | b3 | c3 | e3 |
+
+| Index | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Location | f3 | g3 | c4 | d4 | e4 | b5 | d5 | f5 | a6 | d6 | g6 |
+
+For example, `xxxxxBxWWWWWBBBBxxxxxxx` has Black at `f1`, `f3`, `g3`, `c4`, and `d4`, and White at `e2`, `a3`, `b3`, `c3`, and `e3`. [docs/board.md](docs/board.md) lists every location's neighbors and mills.
 
 ## Project structure
 
