@@ -22,7 +22,8 @@ def main():
         archive.writestr('SUBMISSION_NOTES.txt',
             'Python 3.10+, standard library only. Keep morris/ beside the scripts.\n'
             'Run: python3 MiniMaxOpening.py input.txt output.txt 2\n'
-            'Tournament: python3 TournamentAgent.py input.txt output.txt 12 white opening --history game.json --seconds 180\n'
+            'Tournament console: python3 TournamentAgent.py   (no arguments; interactive)\n'
+            'Tournament single move: python3 TournamentAgent.py input.txt output.txt 12 white opening --history game.json --seconds 180\n'
             'Use a new history file per game; opening without history requires --placements N.\n'
             'Capture exception: Variant p. 4 is interpreted as retaining the move without capture when no opponent is outside a mill.\n'
             'This interpretation is not an instructor-confirmed clarification.\n'

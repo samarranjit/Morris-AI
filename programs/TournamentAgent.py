@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Timed tournament move with optional persistent match history.
+"""Tournament agent: interactive match console, or one timed move.
+
+Interactive (recommended for official games):
+    python3 TournamentAgent.py
+    python3 TournamentAgent.py --resume out/tournament-console/<session>.json
+
+One move from a board file:
+    python3 TournamentAgent.py input output depth white|black opening|midgame --history game.json
 
 Use --history match.json from the beginning of a game to validate opponent
 moves, infer placements, and recognize threefold repetition. Nothing is posted
@@ -14,10 +21,39 @@ _root = _here if (_here / 'morris').is_dir() else _here.parent
 sys.path.insert(0, str(_root))
 
 from morris.io import read_board, write_board
-from morris.tournament import choose_move, load_history, next_state, phase_for, save_history
+from morris.tournament import (
+    choose_move, load_history, next_state, phase_for, run_console, save_history,
+)
+
+_VALUE_OPTIONS = {'--seconds', '--placements', '--history', '--resume', '--depth'}
+
+
+def _has_board_arguments(argv):
+    skip = False
+    for token in argv:
+        if skip:
+            skip = False
+        elif token.startswith('-'):
+            skip = token in _VALUE_OPTIONS
+        else:
+            return True
+    return False
+
+
+def console_main(argv):
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('--resume', type=Path, help='resume a console session JSON')
+    parser.add_argument('--seconds', type=float, help='skip the search-budget question')
+    parser.add_argument('--depth', type=int, help='skip the depth-ceiling question')
+    args = parser.parse_args(argv)
+    return run_console(args.resume, args.seconds, args.depth)
 
 
 def main(argv=None):
+    argv = sys.argv[1:] if argv is None else argv
+    if not _has_board_arguments(argv):
+        return console_main(argv)
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('input')
     parser.add_argument('output')

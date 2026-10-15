@@ -1,14 +1,14 @@
-"""Tournament-only console tests; these files are outside the submission."""
-import importlib.util
+"""Interactive match console in morris.tournament and its TournamentAgent entry."""
 import json
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 
-PLAY = Path(__file__).resolve().parents[1] / 'play.py'
-spec = importlib.util.spec_from_file_location('console_play', PLAY)
-console = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(console)
+from morris import tournament as console
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def new_session(color):
@@ -99,7 +99,7 @@ class ConsoleTests(unittest.TestCase):
         self.assertEqual(loaded['history'], [console.initial_state()])
 
     def test_game_over_does_not_ask_for_input(self):
-        logs = json.loads((PLAY.parents[1]/'deliverables/validation.json').read_text())
+        logs = json.loads((ROOT/'deliverables/validation.json').read_text())
         history = next(g['history'] for g in logs['games'] if g['result'] == 'draw')
         session = dict(new_session('white'), history=history)
         def forbidden(prompt):
@@ -111,3 +111,16 @@ class ConsoleTests(unittest.TestCase):
         for seconds in (float('nan'), float('inf'), 0, 211):
             with self.assertRaises(ValueError):
                 console.check_settings(seconds, 12)
+
+    def test_agent_without_board_arguments_opens_console(self):
+        self.path.write_text(json.dumps(new_session('black')))
+        run = subprocess.run(
+            [sys.executable, str(ROOT/'programs/TournamentAgent.py'), '--resume', str(self.path)],
+            input='quit\n', capture_output=True, text=True, timeout=10)
+        self.assertEqual(run.returncode, 0, run.stderr)
+        self.assertIn('MORRIS TOURNAMENT CONSOLE', run.stdout)
+        self.assertIn('Session saved', run.stdout)
+
+
+if __name__ == '__main__':
+    unittest.main()

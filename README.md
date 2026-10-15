@@ -15,9 +15,57 @@ They print exactly three lines and write the selected 23-character board.
 Black programs report values from Black's perspective. Depth zero evaluates
 the input without choosing a move; use depth >= 1 when playing.
 
-## Tournament: keep one history file per game
+## Tournament: interactive console (use this for official games)
 
-First move as White:
+Run the tournament agent with no board arguments:
+
+```bash
+python3 programs/TournamentAgent.py
+```
+
+On macOS you can instead double-click `programs/Start-Tournament.command`.
+
+Choose `new`, then `white` or `black`. Press Enter for a 180-second search
+budget and depth ceiling 12. Use 2 seconds for a quick practice session.
+
+- White: the agent calculates immediately and prints your first Teams message.
+- Black: the console waits for White's board before calculating your response.
+- Paste a 23-character opponent board and press Enter. The two-line Teams post
+  (`Move N - Color` followed by its board) is also accepted.
+- An illegal board is rejected without advancing the game. Paste again.
+- After a valid board, the agent searches and prints two lines to copy to Teams.
+  Post them yourself; the console never posts online.
+
+The console tracks phase changes, hopping, move numbers, and threefold
+repetition. It stops when the game ends. The saved state assumes you post the
+displayed move, so do not post a different board.
+
+Commands while waiting for the opponent:
+
+- `show`: display the current board and the last recorded move.
+- `time 60`: give future searches 60 seconds instead of the current budget.
+- `quit`: stop. Progress is already saved.
+
+The opponent's Teams timestamp starts the four-minute window, and waiting to
+paste their move uses part of it. Lower the budget with `time N` when needed.
+
+Every new game gets its own session JSON in `out/tournament-console/`, and the
+path is printed in Terminal. To resume, run the console and choose `resume`, or:
+
+```bash
+python3 programs/TournamentAgent.py --resume out/tournament-console/<session>.json
+```
+
+A move your team already calculated is shown again, not recalculated. If the
+opponent's move was saved but the search was interrupted, search restarts from
+that board. Ctrl+C or closing Terminal does not erase accepted moves.
+A session JSON is not the same file as a `--history` array below; keep using
+whichever one a game started with.
+
+## Tournament: one move per command
+
+The same program also runs a single move from a board file. Keep one history
+file per game. First move as White:
 
 ```bash
 python3 programs/TournamentAgent.py examples/empty_board.txt out/move.txt 12 white opening --seconds 180 --history out/game1.json
