@@ -42,3 +42,79 @@
 - [x] Six complete validated local games, timings, and saved logs.
 - [x] Interactive match console in TournamentAgent.py (no board arguments).
 - [x] Submission ZIP and clean-extraction smoke checks of every entry point.
+
+## 8. A stronger tournament agent
+
+Ground rules for this whole section:
+- Only the tournament path changes (`morris/tournament.py`, `programs/TournamentAgent.py`, and new tournament-only modules). The Part I-IV programs keep their exact output, moves, and evaluation counts.
+- The search stays minimax with alpha-beta. Every item below speeds up or sharpens alpha-beta; none replaces it.
+- After each step, run `python -m unittest discover -s tests` and `python3 tools/verify_project.py --examples-only`.
+- Keep an item only if the measurements in 8.1 show it helps.
+- Nothing guarantees winning every game. The goal is to search deeper, evaluate better, and never lose to a crash, a timeout, or an illegal move.
+
+### 8.1 Measurement harness (do this first)
+- [ ] Build a fixed benchmark set: about 10 opening, 10 midgame, and 10 hopping boards, including both handout positions.
+- [ ] Write `tools/benchmark.py`: for each board, report the depth completed, positions per second, and the move chosen at 30 s and 180 s.
+- [ ] Write `tools/self_play.py`: play agent version A against version B over many games, swapping colors, with a shorter time limit (for example 10 s). Report wins, losses, and draws.
+- [ ] Save the current agent's numbers as the baseline to beat.
+
+### 8.2 Faster single-core search
+- [ ] Profile with `cProfile` on the benchmark boards and list the slowest functions.
+- [ ] Speed up the hot paths without changing results: precomputed neighbor and mill tables, fewer string copies, and mill checks that look only at lines through the moved square.
+- [ ] Order moves: captures and mill closures first, then moves that block an opponent mill, then the rest.
+- [ ] Try the previous depth's best move first at every node (from iterative deepening).
+- [ ] Killer moves and the history heuristic: remember moves that caused cutoffs at the same depth and try them early.
+- [ ] Transposition table keyed on board, side to move, and placements. Store depth, value, bound type (exact, lower, upper), and best move. Cap its memory size.
+- [ ] Use the four-fold symmetry of the board (left-right mirror, top-bottom mirror) to share table entries, if the mills and neighbors are symmetric. Verify this with a test before relying on it.
+- [ ] Aspiration windows: start each depth with a narrow window around the last score, and re-search with the full window if the result falls outside it.
+- [ ] Test: at fixed depths, every speedup returns the same value as plain alpha-beta on the benchmark boards.
+
+### 8.3 Using every core
+Python threads cannot run the search in parallel, so this uses separate processes.
+- [ ] Root splitting: send the root moves to a `concurrent.futures.ProcessPoolExecutor` with one worker per core (`os.cpu_count()`). Each worker runs the alpha-beta from 8.2 on its moves.
+- [ ] Send the most promising moves first (using the order from the previous depth), so the best bound is found early.
+- [ ] Share the best root score between workers (`multiprocessing.Value`), so later moves are searched with a tighter alpha and prune more.
+- [ ] Give each worker its own transposition table, and reuse workers across depths and moves so their tables stay warm.
+- [ ] Time budget across processes: each worker checks a shared deadline, and the parent keeps the last fully finished depth. A worker that is cut off can never replace a finished result.
+- [ ] Use `if __name__ == "__main__"` guards and the `spawn` start method, so it works on macOS and Windows.
+- [ ] Optional, after root splitting works: split deeper (for example the first two plies) when the root has few moves, as often happens in the hopping endgame.
+- [ ] Test: at fixed depth, the parallel and single-process versions return the same value; the parallel version never returns an illegal move; the deadline holds when a worker hangs or crashes.
+- [ ] Add `--workers N`, defaulting to the core count. Keep `--workers 1` as a safe fallback.
+- [ ] Benchmark at 1, 2, 4, and all cores. Keep the setting that reaches the most depth.
+
+### 8.4 Smarter time use
+- [ ] Spend the budget by situation: more on complex midgame boards and when the score drops between depths, less on forced moves.
+- [ ] If only one legal move exists, play it at once.
+- [ ] Do not start a new depth that probably cannot finish; estimate its time from the growth between earlier depths.
+- [ ] Keep a fixed safety margin (for example 20 s) for pasting and posting within the 4-minute limit.
+
+### 8.5 A stronger evaluator
+- [ ] Add candidate features: open mills (two pieces and an empty square), double mills, pieces that can close a mill next move, and an endgame term for the 3-piece hopping phase.
+- [ ] Tune the weights by self-play (8.1): change one weight at a time and keep a change only if it wins more games over at least 50 games with colors swapped.
+- [ ] Keep the evaluator symmetric (swapping colors negates the score), and keep game results at plus or minus 10000.
+- [ ] Prefer faster wins and slower losses: adjust win and loss scores by depth so the agent finishes won games instead of shuffling.
+- [ ] Keep `deliverables/MyStaticEstimation.txt` matching the evaluator that is submitted, or keep the tuned tournament evaluator separate.
+
+### 8.6 Opening preparation (check with the instructor first)
+- [ ] Ask the instructor whether a precomputed opening table or endgame table is allowed, since it is not minimax or alpha-beta at play time.
+- [ ] If allowed: run long overnight searches on all opening positions up to a few placements, using the full machine, and store the best moves.
+- [ ] If allowed: solve small endgames (for example 3 against 3 hopping) offline and store won, lost, and drawn results.
+
+### 8.7 Robustness (never lose to a bug)
+- [ ] Always keep a legal fallback move ready from depth 1 before searching deeper.
+- [ ] Validate every opponent board and every agent board as a legal successor before saving or posting. This is already done; keep the tests.
+- [ ] Save the session after every move so a crash, closed laptop, or reboot can resume with `--resume`.
+- [ ] Handle `Ctrl+C` and worker crashes by returning the best finished move, never a traceback.
+- [ ] Threefold repetition and draw handling: avoid repeating when ahead, seek a repetition when behind.
+- [ ] Test long games, full 18 placements, all-in-mill captures, both colors, and hopping on both sides.
+
+### 8.8 Match-day setup
+- [ ] Plug in the laptop, close other apps, and turn off sleep. On macOS run the agent with `caffeinate -i python3 programs/TournamentAgent.py`.
+- [ ] Run `tools/benchmark.py` on the match machine once, to confirm the depth reached and that every core is busy (Activity Monitor).
+- [ ] Do a full practice game in the console from start to finish, including `--resume` after quitting.
+- [ ] Keep a second machine or teammate ready with the same commit and the saved session file.
+
+### 8.9 Wrap-up
+- [ ] Record the before-and-after depth, speed, and self-play results in `docs/tournament.md`.
+- [ ] Make sure every team member can explain the move ordering, transposition table, parallel search, and evaluator changes.
+- [ ] Rebuild the ZIP with `tools/build_submission.py` and rerun its smoke checks.
