@@ -28,10 +28,11 @@
 - [x] Implement documented opening and midgame/endgame formulas.
 - [x] Check symmetry, hopping mobility, terminal bounds, and search equivalence.
 
-## 6. Written evidence
-- [x] Two pruning examples with boards, depth, values, and evaluation counts.
-- [x] Two improved-move disagreements with positional explanations.
-- [x] Four required evaluator answers in MyStaticEstimation.txt.
+## 6. Written answers for the submission
+- [x] Examples.txt Part II: two pruning cases with commands and real program output.
+- [x] Examples.txt Part IV: two improved-move disagreements with program output and reasons.
+- [x] MyStaticEstimation.txt: the four required answers, plus the two boards in section 5.
+- [x] README maps each handout requirement to the file section that answers it.
 - [x] Beginner walkthrough in EXPLANATION.md.
 
 ## 7. Tournament and packaging
@@ -39,15 +40,5 @@
 - [x] Placement-aware phase transition inside search.
 - [x] Persistent validated game history and threefold repetition.
 - [x] Six complete validated local games, timings, and saved logs.
+- [x] Interactive match console in TournamentAgent.py (no board arguments).
 - [x] Submission ZIP and clean-extraction smoke checks of every entry point.
-
-## Human tournament/submission tasks
-- [ ] Confirm the extended due dates and team identifiers.
-- [ ] Review the code and written answers; all teammates must be able to explain them.
-- [ ] Schedule and finish all assigned official matches, both colors.
-- [ ] Follow the four-minute Teams protocol and retain the official logs.
-- [ ] Report official results in the required MATCH format.
-- [ ] Upload one ZIP per team to Canvas, respecting any additional Canvas instructions.
-
-Local games are test games, not official matches or results. No submission or
-external messaging has been performed by the implementation tools.

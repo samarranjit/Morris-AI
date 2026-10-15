@@ -32,11 +32,14 @@ Alpha-beta uses those same three lines. For the same position and depth, minimax
 
 Black programs may use the color-swap method in the Morris handout. This repo does: swap the input, run the White search, swap the chosen board back. The printed estimate is the swapped search value, so a higher number favors Black.
 
-`TournamentAgent.py` is optional in the ZIP only if the team folds everything into the other programs. This repo keeps it as its own file. Suggested call:
+`TournamentAgent.py` is optional in the ZIP only if the team folds everything into the other programs. This repo keeps it as its own file. It has two modes:
 
 ```bash
+python programs/TournamentAgent.py
 python programs/TournamentAgent.py <input> <output> <depth> <white|black> <opening|midgame> --history <game.json>
 ```
+
+With no board arguments it opens the interactive match console used for official games. With board arguments it makes one timed move. See README.md.
 
 ## Parts
 
@@ -51,12 +54,11 @@ python programs/TournamentAgent.py <input> <output> <depth> <white|black> <openi
 
 Tournament wins and losses are not the grade. Part V is graded on legal moves, playing both colors, finishing assigned games, following the time limit and protocol, and team participation. All three teammates normally receive the same grade. A participation problem should be raised with the instructor early.
 
-`Examples.txt` has to include:
+`Examples.txt` has to include at least two positions where alpha-beta evaluates fewer positions than minimax. Ours also repeats the two Part IV boards with full program output.
 
-- at least two positions where alpha-beta evaluates fewer nodes than minimax,
-- at least two positions where the improved estimator chooses a different move than the baseline, with a short reason for preferring the new move.
+`MyStaticEstimation.txt` has to cover the features, why they were chosen, how they are combined, and why the result is stronger than the handout estimator, plus at least two boards where the improved estimator chooses a different move, with a short reason for preferring it.
 
-`MyStaticEstimation.txt` has to cover the features, why they were chosen, how they are combined, and why the result is stronger than the handout estimator.
+Both files are written in `deliverables/`. README.md maps each requirement to the section that answers it.
 
 ## Development notes from the project handout
 

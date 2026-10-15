@@ -106,6 +106,32 @@ Only post an output after a successful exit (code 0), and check the three-line
 result. Diagnostics such as completed depth go to stderr. A failed command may
 leave an OLD output file in place; never mistake it for a new decision.
 
+## Written answers for the submission
+
+The handout asks for two text files with the code. Both are in `deliverables/`
+and both go into the ZIP.
+
+| Handout requirement | Answered in |
+| --- | --- |
+| Part II: at least two cases where alpha-beta evaluates fewer positions than minimax | `Examples.txt`, Part II (cases 1 and 2) |
+| Part IV: features used by the improved estimator | `MyStaticEstimation.txt`, section 1 |
+| Part IV: why those features were selected | `MyStaticEstimation.txt`, section 2 |
+| Part IV: how they are combined | `MyStaticEstimation.txt`, section 3 |
+| Part IV: why it is better than the original estimator | `MyStaticEstimation.txt`, section 4 |
+| Part IV: two boards where the improved estimator picks a different move, and why | `MyStaticEstimation.txt`, section 5, and `Examples.txt`, Part IV |
+
+Each example in `Examples.txt` shows the command and the three lines the
+submitted program printed. Regenerate it after any change to the search or the
+estimators:
+
+```bash
+python3 tools/verify_project.py --examples-only
+```
+
+That command also stops with an error if `MyStaticEstimation.txt` quotes a
+move the programs no longer choose. Section 5 of that file is written by hand,
+so update it if this happens.
+
 ## Evidence and submission
 
 ```bash
@@ -113,10 +139,10 @@ python3 tools/verify_project.py
 python3 tools/build_submission.py
 ```
 
-- `deliverables/Examples.txt`: two pruning examples and two improved choices.
-- `deliverables/MyStaticEstimation.txt`: all four required written answers.
-- `deliverables/Validation.txt`: measured timing and local game results.
-- `deliverables/validation.json`: machine-readable results and complete games.
+- `deliverables/Examples.txt`: the Part II and Part IV examples (submitted).
+- `deliverables/MyStaticEstimation.txt`: the Part IV written answers (submitted).
+- `deliverables/Validation.txt`: measured timing and local game results (not submitted).
+- `deliverables/validation.json`: machine-readable results and complete games (not submitted).
 - `dist/Morris-AI-submission.zip`: nine entry scripts at ZIP root, `morris/`,
   the two required text files, and concise submission notes.
 
@@ -136,3 +162,14 @@ ambiguous pseudocode, not an instructor-confirmed ruling. See EXPLANATION.md.
 The user reports an extension to the printed deadlines. Confirm the new dates
 in the course announcement. No matches have been scheduled, posted, or reported
 by these tools. Tournament participation and official reporting remain team tasks.
+
+## Other documents
+
+- [EXPLANATION.md](EXPLANATION.md): how the move generator, minimax, alpha-beta,
+  estimators, and tournament agent work. Read it before explaining the code.
+- [CHECKLIST.md](CHECKLIST.md): what is done and what the team still has to do.
+- [docs/rules.md](docs/rules.md), [docs/board.md](docs/board.md): the game rules
+  and the 23 board locations.
+- [docs/programs.md](docs/programs.md): the required programs, output format,
+  and grading weights.
+- [docs/tournament.md](docs/tournament.md): match protocol and result reporting.

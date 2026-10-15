@@ -29,7 +29,7 @@ This small deterministic sample is a regression check, not statistical proof of 
 Opponent implementations and deeper searches may perform differently. Retune only after measured comparisons.
 
 FINAL CHECKS
-46 automated tests passed in the original project folder.
+57 automated tests passed.
 All nine entry scripts passed from a clean ZIP extraction.
 Real 0.05-second budget: completed depth 3, next iteration interrupted, legal move returned in about 0.05003 seconds.
 Baseline estimator verified byte-for-byte unchanged.

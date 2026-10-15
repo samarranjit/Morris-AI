@@ -18,10 +18,13 @@ Guide for coding agents working in this repository. Read this before changing co
 | `morris/improved.py` | Part IV estimators. This is where the new evaluation goes. |
 | `morris/search.py` | Part I minimax and Part II alpha-beta. Both are implemented and tested. |
 | `morris/cli.py` | Shared argument parsing and the three-line output. |
+| `morris/tournament.py` | Timed iterative-deepening alpha-beta, match history, and the interactive match console. |
+| `tools/verify_project.py` | Regenerates `Examples.txt` from real program runs, plus timings and local games. |
+| `tools/build_submission.py` | Builds and smoke-tests the submission ZIP. |
 | `programs/*.py` | Required program names. Run them as `python programs/MiniMaxOpening.py`. Each one only calls `morris.cli.run`. Copy these files to the ZIP root at submission time. |
 | `deliverables/` | `Examples.txt` and `MyStaticEstimation.txt` for the ZIP. |
 | `examples/` | Board files, including the two positions drawn in the handout. |
-| `tests/test_handout.py` | Board, mills, generators, and baseline estimates. |
+| `tests/` | Handout facts, moves, search against an exhaustive oracle, CLI, improved estimator, tournament, console. |
 
 ## Board contract
 
@@ -87,13 +90,16 @@ The output file contains the same 23-character board.
 3. how they are combined,
 4. why this is stronger than the handout estimator.
 
-Include at least two boards where the improved move differs from the baseline move, and why the new move is preferred. The feature list in the project handout (piece difference, mobility, mills, blocked pieces, useful squares) is optional. The write-up has to give a game-playing reason for the features that are used.
+Include at least two boards where the improved move differs from the baseline move, and why the new move is preferred. These are section 5 of `MyStaticEstimation.txt` and Part IV of `Examples.txt`. The feature list in the project handout (piece difference, mobility, mills, blocked pieces, useful squares) is optional. The write-up has to give a game-playing reason for the features that are used.
+
+After changing search or an estimator, run `python3 tools/verify_project.py --examples-only`. It rewrites `Examples.txt` from real program output and fails if `MyStaticEstimation.txt` quotes a move the programs no longer choose.
 
 ## Part V
 
-`programs/TournamentAgent.py` is the match program:
+`programs/TournamentAgent.py` is the match program. With no board arguments it runs the interactive console in `morris/tournament.py`; with board arguments it makes one move:
 
 ```bash
+python programs/TournamentAgent.py
 python programs/TournamentAgent.py <input> <output> <depth> <white|black> <opening|midgame>
 ```
 

@@ -1,58 +1,109 @@
-CS4346 Morris AI - reproducible examples
-Rule: when every opposing piece is in a mill, retain the move without capture (Variant p. 4).
-Depth counts individual turns. Counts are actual static-estimator calls.
-Run: python3 tools/verify_project.py --examples-only
+CS4346 Morris AI - Examples.txt
 
-PART II: ALPHA-BETA PRUNING
+This file answers two requirements of the project handout:
+  Part II: at least two cases where ALPHA-BETA evaluates fewer positions than MINIMAX,
+           with the same MINIMAX estimate and the same move.
+  Part IV: at least two board positions where the improved static estimation selects
+           a different move than the original one, with a reason for preferring it.
 
-Case 1
+Each case shows the exact command and the three lines the submitted program printed.
+Input files are the two positions drawn in the Morris Variant handout:
+  handout_position_1.txt = xxxxxBxWWWWWBBBBxxxxxxx
+  handout_position_2.txt = WxWWxWWWWWBBBBBBBBxxxxx
+Depth counts individual turns (plies). "Positions evaluated" counts calls to the static estimator.
+Capture rule used: when every opposing piece is in a mill, the mill-closing move is kept
+without a capture (last line of GenerateRemove, Variant p. 4).
+Regenerate: python3 tools/verify_project.py --examples-only
+
+
+PART II: ALPHA-BETA EVALUATES FEWER POSITIONS THAN MINIMAX
+
+Case 1 (opening, depth 3)
 Input board: xxxxxBxWWWWWBBBBxxxxxxx
-Phase: opening
-Depth: 3
-Both selected: xxxxxxxWWWWWBBBBWxxxxxx
-Move: f1: B->x, e4: x->W
-Shared MINIMAX estimate: 2
-Minimax evaluations: 3778
-Alpha-beta evaluations: 481
-Alpha-beta skips branches that cannot change the decision; strict comparisons preserve the first tied move.
 
-Case 2
+MINIMAX:
+  $ python3 MiniMaxOpening.py handout_position_1.txt board2.txt 3
+  Board Position: xxxxxxxWWWWWBBBBWxxxxxx
+  Positions evaluated by static estimation: 3778
+  MINIMAX estimate: 2
+
+ALPHA-BETA:
+  $ python3 ABOpening.py handout_position_1.txt board2.txt 3
+  Board Position: xxxxxxxWWWWWBBBBWxxxxxx
+  Positions evaluated by static estimation: 481
+  MINIMAX estimate: 2
+
+Selected move: White places a piece at e4 and removes the Black piece at f1
+Same move and same MINIMAX estimate (2). Alpha-beta evaluated 481 positions instead of 3778 (87% fewer).
+Alpha-beta stops exploring a branch once it cannot change the decision above it.
+Both searches try moves in the same order and keep the first move on a tie.
+
+Case 2 (midgame, depth 3)
 Input board: WxWWxWWWWWBBBBBBBBxxxxx
-Phase: midgame
-Depth: 3
-Both selected: xWWWxWWWWWBBBBBBBBxxxxx
-Move: a0: W->x, d0: x->W
-Shared MINIMAX estimate: 993
-Minimax evaluations: 544
-Alpha-beta evaluations: 129
-Alpha-beta skips branches that cannot change the decision; strict comparisons preserve the first tied move.
 
-PART IV: IMPROVED EVALUATION
+MINIMAX:
+  $ python3 MiniMaxGame.py handout_position_2.txt board2.txt 3
+  Board Position: xWWWxWWWWWBBBBBBBBxxxxx
+  Positions evaluated by static estimation: 544
+  MINIMAX estimate: 993
 
-Case 1
+ALPHA-BETA:
+  $ python3 ABGame.py handout_position_2.txt board2.txt 3
+  Board Position: xWWWxWWWWWBBBBBBBBxxxxx
+  Positions evaluated by static estimation: 129
+  MINIMAX estimate: 993
+
+Selected move: White moves a0 to d0
+Same move and same MINIMAX estimate (993). Alpha-beta evaluated 129 positions instead of 544 (76% fewer).
+Alpha-beta stops exploring a branch once it cannot change the decision above it.
+Both searches try moves in the same order and keep the first move on a tie.
+
+
+PART IV: IMPROVED STATIC ESTIMATION SELECTS A DIFFERENT MOVE
+Scores from the two estimators use different scales. Compare the chosen moves, not the numbers.
+
+Case 1 (opening, depth 2)
 Input board: WxWWxWWWWWBBBBBBBBxxxxx
-Phase: opening
-Depth: 2
-Baseline move: WWWWxWWWWWBBBBBBBxxxxxx
-Baseline change: d0: x->W, b5: B->x
-Baseline estimate: 1
-Improved move: WxWWxWWWWWBBBBBBBxxxWxx
-Improved change: b5: B->x, a6: x->W
-Improved estimate: 162
-Scores use different scales; compare choices, not their numerical magnitudes.
-Improved immediate-board feature differences: {'pieces': 2, 'mills': 1, 'open_mills': 3, 'mobility': 2, 'blocked': 1, 'threats': 1, 'connections': 7}
-Why preferred: Both choices capture a Black piece. The improved choice places at a6, which participates in three mill lines; the baseline places at d0, which participates in one. After the selected move the White-minus-Black mill-incidence count is 7 rather than 5. This gives more future mill connections. The decision also considers the opponent's reply at depth 2.
 
-Case 2
+ORIGINAL ESTIMATION:
+  $ python3 MiniMaxOpening.py handout_position_2.txt board2.txt 2
+  Board Position: WWWWxWWWWWBBBBBBBxxxxxx
+  Positions evaluated by static estimation: 76
+  MINIMAX estimate: 1
+  Move: White places a piece at d0 and removes the Black piece at b5
+
+IMPROVED ESTIMATION:
+  $ python3 MiniMaxOpeningImproved.py handout_position_2.txt board2.txt 2
+  Board Position: WxWWxWWWWWBBBBBBBxxxWxx
+  Positions evaluated by static estimation: 76
+  MINIMAX estimate: 162
+  Move: White places a piece at a6 and removes the Black piece at b5
+
+Feature differences after each move (White minus Black):
+  original move: {'pieces': 2, 'mills': 1, 'open_mills': 3, 'mobility': 0, 'blocked': 2, 'threats': 1, 'connections': 5}
+  improved move: {'pieces': 2, 'mills': 1, 'open_mills': 3, 'mobility': 2, 'blocked': 1, 'threats': 1, 'connections': 7}
+
+Why the improved move is preferred: Both moves close a mill and remove the same Black piece, so the original function gives them the same score and keeps the first one, d0. The improved function prefers a6, which lies on three mill lines, over d0, which lies on one. After the move White's connection advantage is 7 instead of 5 and its mobility advantage is +2 instead of 0, so White has more ways to build its next mill. The search also checked Black's reply at depth 2.
+
+Case 2 (midgame, depth 2)
 Input board: xxxxxBxWWWWWBBBBxxxxxxx
-Phase: midgame
-Depth: 2
-Baseline move: xxxxxBxWWWWxBBBBWxxxxxx
-Baseline change: e3: W->x, e4: x->W
-Baseline estimate: -13
-Improved move: xxxxxBxWWxWWBBBBxWxxxxx
-Improved change: b3: W->x, b5: x->W
-Improved estimate: -45
-Scores use different scales; compare choices, not their numerical magnitudes.
-Improved immediate-board feature differences: {'pieces': 0, 'mills': 0, 'open_mills': 0, 'mobility': 3, 'blocked': -1, 'threats': 1, 'connections': -1}
-Why preferred: The improved move slides b3 to b5, opening the existing a3-b3-c3 mill. It preserves the ability to slide back and reform that mill while increasing movement options. Its mobility difference is +3 rather than +1, its blocked-piece difference is -1 rather than 0, and its legal mill-threat difference is +1 rather than 0. The baseline instead slides e3 to e4. The new evaluator values active threats and freedom of movement as well as material. These are positional reasons, not a proof of a forced win.
+
+ORIGINAL ESTIMATION:
+  $ python3 MiniMaxGame.py handout_position_1.txt board2.txt 2
+  Board Position: xxxxxBxWWWWxBBBBWxxxxxx
+  Positions evaluated by static estimation: 57
+  MINIMAX estimate: -13
+  Move: White moves e3 to e4
+
+IMPROVED ESTIMATION:
+  $ python3 MiniMaxGameImproved.py handout_position_1.txt board2.txt 2
+  Board Position: xxxxxBxWWxWWBBBBxWxxxxx
+  Positions evaluated by static estimation: 57
+  MINIMAX estimate: -45
+  Move: White moves b3 to b5
+
+Feature differences after each move (White minus Black):
+  original move: {'pieces': 0, 'mills': 1, 'open_mills': -1, 'mobility': 1, 'blocked': 0, 'threats': 0, 'connections': -1}
+  improved move: {'pieces': 0, 'mills': 0, 'open_mills': 0, 'mobility': 3, 'blocked': -1, 'threats': 1, 'connections': -1}
+
+Why the improved move is preferred: The improved move opens White's a3-b3-c3 mill by sliding b3 to b5. The piece can slide back next turn to close the mill again, which is a real capture threat: the threat difference becomes +1 instead of 0. It also gives White more freedom: mobility +3 instead of +1, and one fewer blocked piece than Black instead of an equal number. The original move, e3 to e4, keeps the mill closed but leaves White with fewer moves and no threat. These are positional reasons, not a proof of a forced win.

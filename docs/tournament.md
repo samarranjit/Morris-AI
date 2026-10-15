@@ -77,4 +77,4 @@ The Teams chat remains the record if a reported line is disputed.
 - Search with minimax or alpha-beta.
 - Return a board inside the 4-minute window. Depth is the team's choice.
 
-Use `--history game.json` from the first turn to validate opponent boards and track placements/repetition. Use a new file per game. See README.md for commands and timing margins.
+For official games, run `python3 programs/TournamentAgent.py` with no arguments. The interactive console validates opponent boards, tracks placements and repetition, numbers the moves, and prints each Teams post. It saves one session file per game, so a game can be resumed. The single-move mode with `--history game.json` does the same checks from the command line. See README.md for commands and timing margins.

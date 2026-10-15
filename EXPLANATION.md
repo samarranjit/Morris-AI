@@ -69,8 +69,8 @@ minimax and alpha-beta programs share order, evaluator, depth, and tie behavior.
 An independent exhaustive reference in the tests checks both algorithms.
 
 Two actual depth-3 examples show evaluations falling from 3778 to 481 and from
-544 to 129, with identical selected boards and values. They are fully recorded
-in deliverables/Examples.txt. There is no transposition table or move ordering;
+544 to 129, with identical selected boards and values. They are fully recorded,
+with the commands and program output, in deliverables/Examples.txt. There is no transposition table or move ordering;
 keeping these out makes correctness and evaluation counts easier to explain.
 
 ## 4. Baseline, Black, and interfaces
@@ -90,7 +90,8 @@ it deliberately does not make a move. The tournament requires depth >= 1.
 
 `morris/improved.py` contains the complete formulas, short comments, and feature
 names. The baseline remains separate. The required explanation of features,
-rationale, combination, and expected benefit is in MyStaticEstimation.txt.
+rationale, combination, and expected benefit is in MyStaticEstimation.txt,
+together with the two boards where the improved function chooses differently.
 
 The important distinction is between an opening opportunity (two pieces plus
 an empty point) and a legal moving-phase mill threat. A moving piece cannot
@@ -130,13 +131,22 @@ The runner refuses to move from an ended game and checks its own chosen move
 against generated legal successors before writing it. It does not post to Teams
 or make claims against opponents. Those remain human decisions.
 
+The interactive console is in the same module. `TournamentAgent.py` with no board
+arguments starts it. It keeps one session file per game: our color, the search
+budget and depth ceiling, and the full history. On our turn it calls the same
+`choose_move` and prints the two-line Teams post. On the opponent's turn it
+accepts a pasted board or Teams post only if it is a legal successor. Each
+accepted move is saved before the next search starts, so a game can resume
+after Ctrl+C or a closed window without losing or repeating a move.
+
 ## 7. What was verified
 
 The automated suite covers board facts, capture protection and fallback,
 placement/sliding/hopping for both colors, blocked players, exact opening leaf
 counts, terminal leaves, minimax/alpha-beta equivalence against an independent
 oracle, Black color symmetry, all nine real entry points, input failures,
-phase transitions, timeouts, history validation, and repetition semantics.
+phase transitions, timeouts, history validation, repetition semantics, and the
+interactive console (new games, illegal pastes, resume, and interrupted searches).
 
 The verification script additionally validates six complete games, including
 a natural repetition draw. Four compare baseline and improved evaluators at
@@ -158,11 +168,12 @@ machine paths are needed to run the submission.
 ## How to prepare for official play
 
 1. Confirm the instructor's capture interpretation and extended deadlines.
-2. Use one designated communicator and one history file per game.
+2. Use one designated communicator and one console session per game
+   (`python3 programs/TournamentAgent.py`).
 3. Test the chosen budget on the actual tournament computer, especially hopping.
-4. Run the command promptly after receiving the opponent's board; the four-minute
-   window begins at the Teams post, not at program startup.
-5. Check exit status and output. Post move number, side, and the 23-character board.
+4. Paste the opponent's board promptly; the four-minute window begins at the
+   Teams post, not when the search starts. Use `time N` to shorten the budget.
+5. Post the two lines the console prints: move number with side, then the board.
 6. Keep the Teams record. Complete both colors against each assigned opponent.
 7. After both games, report the official result using the assigned team IDs:
    `MATCH|TeamA|TeamB|Game1|Game2|YYYY-MM-DD`, with A, B, or D result codes.
