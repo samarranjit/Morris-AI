@@ -126,3 +126,5 @@ When a move closes a mill and every opposing piece is already in a mill, the mov
 ## Acknowledgments
 
 Built as a team project for CS4346, Introduction to Artificial Intelligence, at Texas State University. The game rules and board come from the course handouts in `docs/Morris-Variant.pdf` and `docs/Project.pdf`.
+
+Thank you to Dr. Parth Padalkar at Texas State University for this project assignment.
