@@ -1,16 +1,18 @@
 # Morris AI
 
-A game-playing agent for the **Morris Game, Variant**, a version of Nine Men's Morris on a 23-location board. Built for CS4346 (Introduction to Artificial Intelligence) at Texas State University.
+A game-playing agent for the **Morris Game, Variant**, a version of Nine Men's Morris played on a 23-location board.
 
-The agent chooses moves with **minimax** and **alpha-beta pruning**, scoring positions with a static estimation function. The project has five parts:
+The agent searches the game tree with **minimax** and **alpha-beta pruning** and scores positions with a static evaluation function.
 
-1. **Minimax** for the opening and for the midgame/endgame.
-2. **Alpha-beta**, which returns the same move as minimax while evaluating fewer positions.
-3. **Playing Black** by swapping colors around the White search.
-4. **An improved static estimator** that looks at mills, threats, mobility, and blocked pieces, not only material.
-5. **A tournament agent** that plays timed matches against other teams' agents.
+## Features
 
-Python 3.10 or newer. Standard library only.
+- Legal move generation for all three phases: placing, sliding, and hopping, including mill captures.
+- Minimax and alpha-beta search that return the same move, with alpha-beta evaluating far fewer positions.
+- Play as White or Black, using one search with colors swapped for Black.
+- An evaluation function that weighs mills, mill threats, mobility, and blocked pieces, not only material.
+- A timed match agent with iterative deepening, move validation, threefold-repetition detection, and resumable games.
+
+Python 3.10 or newer, standard library only.
 
 ## Quick start
 
@@ -28,7 +30,7 @@ Positions evaluated by static estimation: <count>
 MINIMAX estimate: <value>
 ```
 
-The third opens the interactive tournament console.
+The third opens the interactive match console. See [docs/tournament.md](docs/tournament.md).
 
 ## The game
 
@@ -46,7 +48,7 @@ Three pieces of one color on a straight line form a **mill**, including the diag
 
 ## Board representation
 
-A position is a 23-character string. `W` is a White piece, `B` a Black piece, and `x` an empty location. The string reads left to right, bottom to top, using this index order from the handout:
+A position is a 23-character string. `W` is a White piece, `B` a Black piece, and `x` an empty location. The string reads left to right, bottom to top, in this index order:
 
 | Index | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -61,44 +63,41 @@ For example, `xxxxxBxWWWWWBBBBxxxxxxx` has Black at `f1`, `f3`, `g3`, `c4`, and 
 ## Project structure
 
 ```
-morris/                     game engine (shared by every program)
+morris/                     game engine, shared by every program
   board.py                  23 locations, neighbors, mills, color swap
   moves.py                  move generators: placing, sliding, hopping, captures
-  estimation.py             original static estimators from the handout
-  improved.py               improved static estimators (Part IV)
+  estimation.py             baseline evaluation functions
+  improved.py               improved evaluation functions
   search.py                 minimax and alpha-beta
   tournament.py             timed search, match history, interactive console
   cli.py, io.py             command-line handling and board files
 
-programs/                   required entry points, one per assignment program
+programs/                   command-line entry points
   MiniMaxOpening.py         White, minimax, opening
   MiniMaxGame.py            White, minimax, midgame/endgame
   ABOpening.py              White, alpha-beta, opening
   ABGame.py                 White, alpha-beta, midgame/endgame
   MiniMaxOpeningBlack.py    Black, minimax, opening
   MiniMaxGameBlack.py       Black, minimax, midgame/endgame
-  MiniMaxOpeningImproved.py White, minimax, opening, improved estimator
-  MiniMaxGameImproved.py    White, minimax, midgame/endgame, improved estimator
+  MiniMaxOpeningImproved.py White, minimax, opening, improved evaluation
+  MiniMaxGameImproved.py    White, minimax, midgame/endgame, improved evaluation
   TournamentAgent.py        match agent for either color and phase
 
-deliverables/               written answers submitted with the code
-  Examples.txt              alpha-beta and improved-estimator examples
-  MyStaticEstimation.txt    design of the improved estimator
-
-tests/                      unit tests for rules, search, programs, tournament
-tools/                      example regeneration and submission ZIP builder
+deliverables/               write-ups and measured results
+tests/                      unit tests for rules, search, programs, and matches
+tools/                      example regeneration and release packaging
 examples/                   sample board files
-docs/                       course handouts and project notes
+docs/                       rules, board reference, and usage guides
 ```
 
-Each file in `programs/` is a few lines long. It selects the search, color, phase, and estimator, then calls the shared engine in `morris/`.
+Each file in `programs/` is a few lines long. It selects the search, color, phase, and evaluation function, then calls the shared engine in `morris/`.
 
 ## How it works
 
-- **Moves.** `moves.py` follows the handout's pseudocode for White. Black's moves are generated by swapping colors, generating White's moves, and swapping back.
+- **Moves.** `moves.py` generates White's moves. Black's moves are generated by swapping colors, generating White's moves, and swapping back.
 - **Search.** `search.py` has one recursive search. White maximizes and Black minimizes. Alpha-beta is the same search with cutoffs enabled, so both return the same move and value.
-- **Estimation.** `estimation.py` keeps the handout's functions unchanged. `improved.py` adds the Part IV functions, explained in `deliverables/MyStaticEstimation.txt`.
-- **Tournament.** `tournament.py` runs alpha-beta with iterative deepening inside a time budget, validates every move against the game history, and detects threefold repetition.
+- **Evaluation.** `estimation.py` holds the baseline functions. `improved.py` adds the stronger ones, described in [deliverables/MyStaticEstimation.txt](deliverables/MyStaticEstimation.txt).
+- **Matches.** `tournament.py` runs alpha-beta with iterative deepening inside a time budget, validates every move against the game history, and detects threefold repetition.
 
 [EXPLANATION.md](EXPLANATION.md) walks through each part in detail.
 
@@ -106,18 +105,15 @@ Each file in `programs/` is a few lines long. It selects the search, color, phas
 
 | Document | Contents |
 | --- | --- |
-| [EXPLANATION.md](EXPLANATION.md) | How the move generator, search, estimators, and tournament agent work |
-| [docs/rules.md](docs/rules.md) | Game rules and the handout's move generators |
+| [EXPLANATION.md](EXPLANATION.md) | How the move generator, search, evaluation, and match agent work |
+| [docs/rules.md](docs/rules.md) | Game rules and move generators |
 | [docs/board.md](docs/board.md) | The 23 board locations, neighbors, and mills |
-| [docs/programs.md](docs/programs.md) | Required programs, output format, grading, and submission |
-| [docs/tournament.md](docs/tournament.md) | Running the tournament agent and the match protocol |
-| [CHECKLIST.md](CHECKLIST.md) | Completed work and remaining team tasks |
+| [docs/programs.md](docs/programs.md) | Programs, output format, and packaging |
+| [docs/tournament.md](docs/tournament.md) | Running the match agent and the match protocol |
 
-The original assignment handouts are `docs/Project.pdf` and `docs/Morris-Variant.pdf`.
+## Rule note
 
-## Rule interpretation
-
-When a move closes a mill and every opposing piece is already in a mill, the move is kept without a capture. This follows the last line of `GenerateRemove` on page 4 of the Morris Variant handout. The handout's pseudocode is ambiguous here, and this reading has not been confirmed by the instructor.
+When a move closes a mill and every opposing piece is already in a mill, the move is kept without a capture. This follows the last line of `GenerateRemove` in the rules handout, whose pseudocode is ambiguous at that point.
 
 ## Team
 
@@ -126,3 +122,7 @@ When a move closes a mill and every opposing piece is already in a mill, the mov
 | Amul Paudel | [@amul-byte](https://github.com/amul-byte) |
 | Gaurab Chhetri | [@gaurabfs-14](https://github.com/gaurabfs-14) |
 | Samar Ranjit | [@samarranjit](https://github.com/samarranjit) |
+
+## Acknowledgments
+
+Built as a team project for CS4346, Introduction to Artificial Intelligence, at Texas State University. The game rules and board come from the course handouts in `docs/Morris-Variant.pdf` and `docs/Project.pdf`.
