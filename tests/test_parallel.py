@@ -65,6 +65,9 @@ class ParallelSearchTest(unittest.TestCase):
     def test_matches_sequential_at_phase_change_and_deeper(self):
         for board, placements in random_states(11, 6):
             self.assert_same(board, placements, 4)
+        # Depth 5 is where replies start being split across workers.
+        for board, placements in random_states(29, 2):
+            self.assert_same(board, placements, 5)
         opening = [s for s in random_states(3, 60) if s[1] == 17][:3]
         for board, placements in opening:
             self.assert_same(board, placements, 3)

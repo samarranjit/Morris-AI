@@ -45,22 +45,41 @@ from morris.tournament import (
 _VALUE_OPTIONS = {'--seconds', '--placements', '--history', '--resume', '--depth', '--workers'}
 
 
-# Parallel alpha-beta. Each worker process runs alpha-beta on some of the root
-# moves. Workers share the best root score found so far, so the other root
-# moves are searched with that alpha and prune as in sequential alpha-beta.
+# Parallel alpha-beta. Workers share the best root score, and when a position has
+# fewer root moves than cores the opponent's replies are split across workers too.
+# Inside each worker, captures, killer moves, the history heuristic, and a
+# transposition table make cutoffs happen sooner. The table is used for a cutoff
+# only when it was stored at the same depth, so the value stays equal to plain
+# alpha-beta; a saved move from any depth is still tried first.
 # The chosen board and value equal morris.tournament.choose_move at the same
-# depth, including the first-generated tie-break; only the speed and the
-# evaluation count differ.
+# depth, including the first-generated tie-break.
 
 NO_BOUND = -1  # Depth slot value meaning no root move has finished at this depth yet.
+_HUGE = 10 ** 15  # Shared beta meaning "no extra cutoff".
+_TT_CAP = 1_000_000
+EXACT, LOWER, UPPER = 0, 1, 2
 
 _pool = None
 _pool_workers = 0
 _pool_shared = None
-_shared = None  # In each worker: [depth, best root value, index of that root move].
+_shared = None  # [depth, best root value, best root index, split beta, split epoch].
+_buf = None
+_tt = {}
+_killers = {}
+_history = {}
+
+
+class _Pruned(Exception):
+    """A split reply can no longer change its root move's result."""
 
 
 def default_workers():
+    """Cores this process may use. On Linux a job can be limited below the machine size."""
+    affinity = getattr(os, 'sched_getaffinity', None)
+    if affinity is not None:
+        allowed = affinity(0)
+        if allowed:
+            return len(allowed)
     return os.cpu_count() or 1
 
 
@@ -73,14 +92,96 @@ def _leaf(position, placed, tally, forced=None):
     return value if forced is None else forced
 
 
-def _alphabeta(position, remaining, white_turn, placed, alpha, beta, deadline, counts, tally):
-    """The same rules, order, and cutoffs as morris.search; returns only the value.
+def _fnv(position, side, count):
+    h = 0xCBF29CE484222325
+    for character in position:
+        h ^= ord(character)
+        h = (h * 0x100000001B3) & 0xFFFFFFFFFFFFFFFF
+    h ^= (0x100 + count) if side else count
+    return (h * 0x100000001B3) & 0xFFFFFFFFFFFFFFFF
 
-    A value outside (alpha, beta) is only a bound. counts maps
-    (board, white to move) to occurrences, or is None.
+
+def _signature(counts):
+    sig = 0
+    if counts:
+        for (position, side), count in counts.items():
+            if count:
+                sig ^= _fnv(position, side, count)
+    return sig
+
+
+def _bump(sig, position, side, old, new):
+    if old:
+        sig ^= _fnv(position, side, old)
+    if new:
+        sig ^= _fnv(position, side, new)
+    return sig
+
+
+def _store(key, depth, flag, value, move):
+    if value == inf or value == -inf:
+        return
+    current = _tt.get(key)
+    if current is not None and current[0] > depth:
+        return
+    if current is None and len(_tt) >= _TT_CAP:
+        return
+    _tt[key] = (depth, flag, int(value), move)
+
+
+def _note_cutoff(ply, white_turn, move, remaining):
+    if len(_history) > 200_000:
+        _history.clear()
+    _history[(white_turn, move)] = _history.get((white_turn, move), 0) + remaining * remaining
+    pair = _killers.get(ply)
+    if pair is None:
+        _killers[ply] = [move, None]
+    elif pair[0] != move:
+        pair[1] = pair[0]
+        pair[0] = move
+
+
+def _order(moves, position, white_turn, ply, tt_move):
+    if len(moves) < 2:
+        return moves
+    opponent = 'B' if white_turn else 'W'
+    opponent_count = position.count(opponent)
+    killers = _killers.get(ply)
+    history = _history
+
+    def rank(move):
+        if move == tt_move:
+            return 4_000_000_000
+        if move.count(opponent) < opponent_count:
+            return 3_000_000_000
+        if killers:
+            if move == killers[0]:
+                return 2_000_000_000
+            if move == killers[1]:
+                return 1_000_000_000
+        return history.get((white_turn, move), 0)
+
+    return sorted(moves, key=rank, reverse=True)
+
+
+def _alphabeta(position, remaining, white_turn, placed, alpha, beta, deadline, counts, tally,
+               sig=0, ply=0, follow_beta=False, epoch=0):
+    """Alpha-beta with the same rules and value as morris.search.
+
+    Move order differs: captures, killer moves, history, and a saved best move
+    go first. A value outside (alpha, beta) is only a bound. counts maps
+    (board, white to move) to occurrences, or is None. sig is the running
+    hash of those counts, so a repeated position is never confused with one
+    that was not repeated.
     """
     if deadline is not None and monotonic() >= deadline:
         raise SearchTimeout()
+    if follow_beta:
+        live = _buf[3]
+        if live < beta:
+            beta = live
+        if alpha >= beta or _buf[4] != epoch:
+            raise _Pruned()
     midgame = placed >= 18
     if midgame:
         if position.count('B') <= 2:
@@ -89,6 +190,12 @@ def _alphabeta(position, remaining, white_turn, placed, alpha, beta, deadline, c
             return _leaf(position, placed, tally, -10000)
     if counts is not None and counts.get((position, white_turn), 0) >= 3:
         return _leaf(position, placed, tally, 0)
+    key = (position, white_turn, placed, sig)
+    entry = _tt.get(key)
+    if entry is not None and entry[0] == remaining:
+        flag, value = entry[1], entry[2]
+        if flag == EXACT or (flag == LOWER and value >= beta) or (flag == UPPER and value <= alpha):
+            return value
     moves = None
     if midgame:
         moves = legal_moves(position, 'midgame', white_turn)
@@ -101,32 +208,52 @@ def _alphabeta(position, remaining, white_turn, placed, alpha, beta, deadline, c
     if not moves:
         return _leaf(position, placed, tally)
 
+    moves = _order(moves, position, white_turn, ply, entry[3] if entry else None)
     best = -inf if white_turn else inf
+    best_move = None
     next_placed = placed + 1 if placed < 18 else placed
+    cutoff = False
     for child in moves:
-        key = (child, not white_turn)
+        child_key = (child, not white_turn)
+        old = 0
         if counts is not None:
-            counts[key] = counts.get(key, 0) + 1
+            old = counts.get(child_key, 0)
+            counts[child_key] = old + 1
+        child_sig = _bump(sig, child, not white_turn, old, old + 1) if counts is not None else sig
         try:
             value = _alphabeta(child, remaining - 1, not white_turn, next_placed,
-                               alpha, beta, deadline, counts, tally)
+                               alpha, beta, deadline, counts, tally, child_sig, ply + 1,
+                               follow_beta, epoch)
         finally:
             if counts is not None:
-                counts[key] -= 1
+                if old:
+                    counts[child_key] = old
+                else:
+                    del counts[child_key]
         if white_turn:
-            best = max(best, value)
+            if value > best:
+                best, best_move = value, child
             alpha = max(alpha, best)
         else:
-            best = min(best, value)
+            if value < best:
+                best, best_move = value, child
             beta = min(beta, best)
         if alpha >= beta:
+            _note_cutoff(ply, white_turn, child, remaining)
+            cutoff = True
             break
+    flag = (LOWER if white_turn else UPPER) if cutoff else EXACT
+    _store(key, remaining, flag, best, best_move)
     return best
 
 
 def _init_worker(shared):
-    global _shared
+    global _shared, _buf, _tt, _killers, _history
     _shared = shared
+    _buf = shared.get_obj()  # Raw array: the beta and epoch are read at every node, without the lock.
+    _tt = {}
+    _killers = {}
+    _history = {}
     signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ctrl+C is handled by the parent.
 
 
@@ -140,7 +267,7 @@ def _get_pool(workers):
         shutdown_pool()
         # spawn behaves the same on macOS, Linux, and Windows.
         context = multiprocessing.get_context('spawn')
-        _pool_shared = context.Array('q', [NO_BOUND, 0, 0])
+        _pool_shared = context.Array('q', [NO_BOUND, 0, 0, _HUGE, 0])
         _pool = ProcessPoolExecutor(workers, mp_context=context,
                                     initializer=_init_worker, initargs=(_pool_shared,))
         _pool_workers = workers
@@ -175,7 +302,7 @@ def shutdown_pool():
 def _search_root_move(depth, index, child, placements, deadline, counts):
     """Search one root move in a worker. Returns (index, value, exact, evaluated)."""
     with _shared.get_lock():
-        bound_depth, best, best_index = _shared[:]
+        bound_depth, best, best_index = _shared[:3]
     alpha = -inf
     if bound_depth == depth:
         # An earlier root move must strictly beat best - 1 to be rejected, so a
@@ -184,7 +311,7 @@ def _search_root_move(depth, index, child, placements, deadline, counts):
     tally = [0]
     try:
         value = _alphabeta(child, depth - 1, False, min(18, placements + 1),
-                           alpha, inf, deadline, counts, tally)
+                           alpha, inf, deadline, counts, tally, _signature(counts))
     except SearchTimeout:
         return index, None, False, tally[0]
     value = int(value)
@@ -194,6 +321,101 @@ def _search_root_move(depth, index, child, placements, deadline, counts):
             if _shared[0] != depth or value > _shared[1] or (value == _shared[1] and index < _shared[2]):
                 _shared[0], _shared[1], _shared[2] = depth, value, index
     return index, value, exact, tally[0]
+
+
+def _search_reply(depth, reply, placed, deadline, counts, alpha, beta, epoch):
+    """Search one opponent reply in a worker. Returns (value or 'pruned' or None, evaluated)."""
+    tally = [0]
+    try:
+        value = _alphabeta(reply, depth - 2, True, placed, alpha, beta, deadline, counts, tally,
+                           _signature(counts), 0, True, epoch)
+    except SearchTimeout:
+        return None, tally[0]
+    except _Pruned:
+        return 'pruned', tally[0]
+    return int(value), tally[0]
+
+
+def _reply_count(child, placements):
+    placed = min(18, placements + 1)
+    phase = 'opening' if placed < 18 else 'midgame'
+    return len(legal_moves(child, phase, False))
+
+
+def _search_split_move(depth, child, placements, deadline, repetitions, alpha):
+    """Split one root move across the opponent's replies.
+
+    Returns (value, exact, evaluated), or None when the move is too small to split.
+    The first reply is searched alone so its score cuts the others, and a shared
+    beta tightens as replies finish. Raising the epoch stops replies that are
+    already running once they can no longer change the result.
+    """
+    placed = min(18, placements + 1)
+    phase = 'opening' if placed < 18 else 'midgame'
+    replies = legal_moves(child, phase, False)
+    if len(replies) < 4 or depth < 5:
+        return None
+    opponent = 'W'  # Black is to move and would capture a white piece.
+    opponent_count = child.count(opponent)
+    replies = sorted(replies, key=lambda move: move.count(opponent) < opponent_count, reverse=True)
+    reply_placed = placed + 1 if placed < 18 else placed
+    base = None
+    if repetitions is not None:
+        base = dict(repetitions)
+        key = (child, False)
+        base[key] = base.get(key, 0) + 1
+
+    def counts_for(reply):
+        if base is None:
+            return None
+        counts = dict(base)
+        key = (reply, True)
+        counts[key] = counts.get(key, 0) + 1
+        return counts
+
+    pool, shared = _get_pool(_pool_workers)
+    buf = shared.get_obj()
+    epoch = buf[4] + 1
+    buf[4] = epoch
+    buf[3] = _HUGE
+    evaluated = 0
+    futures = []
+    try:
+        first = pool.submit(_search_reply, depth, replies[0], reply_placed, deadline,
+                            counts_for(replies[0]), alpha, inf, epoch)
+        value, count = first.result()
+        evaluated += count
+        if value is None:
+            raise SearchTimeout()
+        if value == 'pruned' or value <= alpha:
+            buf[4] = epoch + 1
+            return value if value != 'pruned' else alpha, False, evaluated
+        best = value
+        buf[3] = best
+        for reply in replies[1:]:
+            futures.append(pool.submit(_search_reply, depth, reply, reply_placed, deadline,
+                                       counts_for(reply), alpha, best, epoch))
+        for future in as_completed(futures):
+            value, count = future.result()
+            evaluated += count
+            if value is None:
+                raise SearchTimeout()
+            if value == 'pruned':
+                continue
+            if value <= alpha:
+                buf[4] = epoch + 1
+                return value, False, evaluated
+            if value < best:
+                best = value
+                buf[3] = best
+    except BaseException:
+        buf[4] = epoch + 1
+        for future in futures:
+            future.cancel()
+        raise
+    finally:
+        buf[3] = _HUGE
+    return best, best > alpha, evaluated
 
 
 def search_root(board, moves, depth, placements, deadline, repetitions, workers, order=None):
@@ -231,13 +453,49 @@ def search_root(board, moves, depth, placements, deadline, repetitions, workers,
             raise SearchTimeout()
         results[index] = (value, exact)
 
+    def alpha_for(index):
+        with shared.get_lock():
+            bound_depth, best, best_index = shared[0], shared[1], shared[2]
+        if bound_depth != depth:
+            return -inf
+        # An earlier generated move wins a tie, so it is allowed to match best.
+        return best if index > best_index else best - 1
+
+    def record(index, value, exact, count):
+        nonlocal evaluated
+        evaluated += count
+        if value is None:
+            raise SearchTimeout()
+        results[index] = (value, exact)
+        if exact:
+            with shared.get_lock():
+                if shared[0] != depth or value > shared[1] or (value == shared[1] and index < shared[2]):
+                    shared[0], shared[1], shared[2] = depth, value, index
+
+    def search_one(index):
+        """Split this move's replies when there are enough of them; otherwise one worker."""
+        if depth >= 5 and workers >= 2 and _reply_count(moves[index], placements) >= 4:
+            result = _search_split_move(depth, moves[index], placements, deadline,
+                                        repetitions, alpha_for(index))
+            if result is not None:
+                return result
+        index, value, exact, count = submit(index).result()
+        return value, exact, count
+
     try:
         indices = list(order if order is not None else range(len(moves)))
-        # Search the most promising move alone first; its score then bounds
-        # every other root move, as in sequential alpha-beta.
-        collect(submit(indices[0]))
-        for future in as_completed([submit(index) for index in indices[1:]]):
-            collect(future)
+        # Few root moves (typical of the midgame): search them one at a time and
+        # give every core some of the opponent's replies. Many root moves (the
+        # opening): split only the first move, which used to run on one core, then
+        # search the other root moves all at once.
+        if (depth >= 5 and workers >= 2 and len(indices) <= 12
+                and _reply_count(moves[indices[0]], placements) >= 4):
+            for index in indices:
+                record(index, *search_one(index))
+        else:
+            record(indices[0], *search_one(indices[0]))
+            for future in as_completed([submit(index) for index in indices[1:]]):
+                collect(future)
     except (KeyboardInterrupt, BrokenProcessPool):
         shutdown_pool()
         raise

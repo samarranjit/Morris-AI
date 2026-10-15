@@ -118,18 +118,21 @@ fallback, completed iterations, and an interrupted iteration; this differs from
 the fixed-depth assignment programs' single-search counts. With worker
 processes, evaluations from an interrupted depth are not counted.
 
-With more than one worker (`--workers`, default every CPU core), depths 2 and
-up run in parallel code inside `programs/TournamentAgent.py`, so the agent
-can be shared as that file plus the `morris/` package. The root moves are
-split across processes; each process runs alpha-beta with the same rules,
-move order, and cutoffs as `morris/search.py` on its moves. The most promising root
-move is searched first, and the best root score so far is shared, so the other
-moves are searched with that alpha and prune like the sequential search. An
-earlier generated move is searched with alpha one below the shared best, so a
-tie still goes to the first generated move. The chosen board and value are
-therefore the same as sequential alpha-beta; only the evaluation count and
-speed differ. If processes cannot start or a worker dies, the search continues
-in one process.
+With more than one worker (`--workers`, default every CPU core the process
+may use), depths 2 and up run in parallel code inside `programs/TournamentAgent.py`,
+so the agent can be shared as that file plus the `morris/` package. Each worker
+runs alpha-beta with the same rules as `morris/search.py`, but tries captures,
+killer moves, history moves, and a saved best move first, and remembers
+positions in a transposition table. A stored value is reused only at the same
+depth, so the result stays equal to plain alpha-beta; the saved move is still
+tried first at any depth. The most promising root move is searched first. When
+the position has many root moves they are shared across cores. When it has
+about twelve or fewer, the opponent's replies are shared instead, which is
+what keeps a large machine busy in the midgame. The best root score so far is
+shared. An earlier generated move wins a tie. The chosen board and value are
+therefore the same as sequential alpha-beta; the evaluation count is lower
+because a remembered position is not evaluated again. If processes cannot start
+or a worker dies, the search continues in one process.
 
 Tournament search knows how many of the 18 placements have been made. When a
 simulated line reaches placement 18, it switches move generation and evaluation

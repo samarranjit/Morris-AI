@@ -147,12 +147,12 @@ Only post an output after a successful exit (code 0). Diagnostics such as comple
 
 ## Parallel search measurements
 
-Measured on a 14-core Mac with `python3 tools/benchmark.py`. Time to finish depth 7, with the same move and value at both worker counts:
+Measured on a 14-core Mac with `python3 tools/benchmark.py --seconds 20`. Depth finished inside 20 seconds. One worker is plain alpha-beta. Fourteen workers add move ordering, a transposition table, and reply splitting. At the same depth both choose the same move; a higher depth can choose a different one.
 
-| Board | Root moves | 1 worker | 14 workers |
-| --- | --- | --- | --- |
-| Opening, empty board | 23 | 86.5 s | 22.9 s |
-| Midgame, random position | 8 | 19.5 s | 9.1 s |
-| Midgame, handout position 2 | 5 | 4.8 s | 3.2 s |
+| Board | 1 worker | 14 workers |
+| --- | --- | --- |
+| Opening, empty board | depth 6 | depth 8 |
+| Midgame, handout position 2 | depth 8 | depth 10 |
+| Midgame, random position | depth 7 | depth 8 |
 
-The speedup depends on the number of root moves: each root move runs on one core, so a position with 5 moves cannot use 14 cores. Each extra depth costs several times the previous one, so this gains about one depth at best within 180 seconds. Run the benchmark on the match machine before official games.
+In the opening there are many first moves, so those are shared across cores. In the midgame there are few, so the opponent's replies are shared instead. Run the benchmark on the match machine before official games. On Linux the worker count follows the cores the job is allowed to use, which can be fewer than the machine has.

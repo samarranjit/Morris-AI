@@ -61,26 +61,26 @@ Ground rules for this whole section:
 ### 8.2 Faster single-core search
 - [ ] Profile with `cProfile` on the benchmark boards and list the slowest functions.
 - [ ] Speed up the hot paths without changing results: precomputed neighbor and mill tables, fewer string copies, and mill checks that look only at lines through the moved square.
-- [ ] Order moves: captures and mill closures first, then moves that block an opponent mill, then the rest.
-- [ ] Try the previous depth's best move first at every node (from iterative deepening).
-- [ ] Killer moves and the history heuristic: remember moves that caused cutoffs at the same depth and try them early.
-- [ ] Transposition table keyed on board, side to move, and placements. Store depth, value, bound type (exact, lower, upper), and best move. Cap its memory size.
+- [x] Order moves, inside `programs/TournamentAgent.py`: captures first, then killer moves, history moves, and the saved best move. Blocking an opponent mill is not separate yet.
+- [x] Try the previous depth's best move first, at the root from the last iteration and inside the tree from the transposition table.
+- [x] Killer moves and the history heuristic.
+- [x] Transposition table keyed on board, side, placements, and the repetition history. A stored value is used only at the same depth, so the result matches plain alpha-beta; the saved move is tried first at any depth. Capped at one million entries per worker.
 - [ ] Use the four-fold symmetry of the board (left-right mirror, top-bottom mirror) to share table entries, if the mills and neighbors are symmetric. Verify this with a test before relying on it.
 - [ ] Aspiration windows: start each depth with a narrow window around the last score, and re-search with the full window if the result falls outside it.
-- [ ] Test: at fixed depths, every speedup returns the same value as plain alpha-beta on the benchmark boards.
+- [x] Test: at fixed depths, the faster search returns the same board and value as plain alpha-beta, including depth 5 where replies are split.
 
 ### 8.3 Using every core
 Python threads cannot run the search in parallel, so this uses separate processes.
 - [x] Root splitting, entirely inside `programs/TournamentAgent.py` (the `morris/` package is unchanged): root moves go to a `ProcessPoolExecutor` with one worker per core (`os.cpu_count()`). Each worker runs alpha-beta, with the same rules as `morris/search.py`, on its move.
 - [x] Search the most promising move first, alone, then the rest in parallel, ordered by the previous depth's scores.
 - [x] Share the best root score between workers (`multiprocessing.Array`), so later moves are searched with a tighter alpha. Earlier moves use alpha one lower, so ties still go to the first generated move.
-- [ ] Give each worker its own transposition table, and reuse workers across depths and moves so their tables stay warm. (Workers are reused; the tables wait for 8.2.)
+- [x] Each worker keeps its own transposition table, killers, and history, and workers are reused across depths and moves.
 - [x] Time budget across processes: each worker checks the same deadline, and the parent keeps the last fully finished depth.
 - [x] `if __name__ == "__main__"` guards and the `spawn` start method, so it works on macOS and Windows.
-- [ ] Optional: split deeper (for example the first two plies) when the root has few moves, as often happens in the midgame and hopping endgame.
-- [x] Tests in `tests/test_parallel.py`: same board and value as sequential alpha-beta on random opening and midgame positions, depths 2-4, the phase change, and repetition counts; deadline; tiny budget.
+- [x] Split the opponent's replies across cores when a position has about twelve or fewer root moves, and always split the first root move once the depth reaches 5.
+- [x] Tests in `tests/test_parallel.py`: same board and value as sequential alpha-beta on random opening and midgame positions, depths 2-5, the phase change, and repetition counts; deadline; tiny budget.
 - [x] `--workers N` in both TournamentAgent modes, defaulting to the core count. Falls back to one process if workers cannot start or die.
-- [x] Benchmark (`tools/benchmark.py`): 1.5x to 3.8x faster at depth 7 on 14 cores; results in `docs/tournament.md`.
+- [x] Benchmark (`tools/benchmark.py --seconds 20`, 14 cores): opening depth 6 to 8, handout midgame depth 8 to 10, random midgame depth 7 to 8. Results in `docs/tournament.md`.
 
 ### 8.4 Smarter time use
 - [ ] Spend the budget by situation: more on complex midgame boards and when the score drops between depths, less on forced moves.
