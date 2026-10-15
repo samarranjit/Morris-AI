@@ -118,3 +118,11 @@ The original assignment handouts are `docs/Project.pdf` and `docs/Morris-Variant
 ## Rule interpretation
 
 When a move closes a mill and every opposing piece is already in a mill, the move is kept without a capture. This follows the last line of `GenerateRemove` on page 4 of the Morris Variant handout. The handout's pseudocode is ambiguous here, and this reading has not been confirmed by the instructor.
+
+## Team
+
+| Name | GitHub |
+| --- | --- |
+| Amul Paudel | [@amul-byte](https://github.com/amul-byte) |
+| Gaurab Chhetri | [@gaurabfs-14](https://github.com/gaurabfs-14) |
+| Samar Ranjit | [@samarranjit](https://github.com/samarranjit) |
