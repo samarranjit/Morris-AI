@@ -16,7 +16,7 @@ Guide for coding agents working in this repository. Read this before changing co
 | `morris/moves.py` | Handout generators: add, slide, hop, remove, and Black via color swap |
 | `morris/estimation.py` | Baseline opening and midgame/endgame estimators. Leave these as specified. |
 | `morris/improved.py` | Part IV estimators. This is where the new evaluation goes. |
-| `morris/search.py` | Part I minimax and Part II alpha-beta. Both are still stubs. |
+| `morris/search.py` | Part I minimax and Part II alpha-beta. Both are implemented and tested. |
 | `morris/cli.py` | Shared argument parsing and the three-line output. |
 | `programs/*.py` | Required program names. Run them as `python programs/MiniMaxOpening.py`. Each one only calls `morris.cli.run`. Copy these files to the ZIP root at submission time. |
 | `deliverables/` | `Examples.txt` and `MyStaticEstimation.txt` for the ZIP. |
@@ -40,7 +40,7 @@ White generators follow the handout pseudocode.
 - Opening: `generate_add`. Place one white piece on an empty square.
 - Midgame: `generate_move`. Slide along an edge to an empty neighbor.
 - Endgame: `generate_hopping`, used when White has exactly three pieces.
-- A move that closes a mill also removes one black piece that is not itself in a mill. When every black piece is in a mill, any black piece may be removed.
+- A move that closes a mill also removes one black piece that is not itself in a mill. When every black piece is in a mill, retain the move without capture, following the final GenerateRemove line (Variant p. 4). This is a documented interpretation of ambiguous pseudocode, not an instructor-confirmed ruling.
 
 Black moves: swap colors, generate the White moves, swap the results. `MiniMaxOpeningBlack.py` and `MiniMaxGameBlack.py` use that same swap around the White search. After the swap, a larger minimax estimate favors Black.
 
@@ -97,7 +97,7 @@ Include at least two boards where the improved move differs from the baseline mo
 python programs/TournamentAgent.py <input> <output> <depth> <white|black> <opening|midgame>
 ```
 
-It currently requests alpha-beta and the improved estimator. Change that wiring when the team picks a depth and an estimator. A move must be a legal successor, for either color, in the correct phase, and the team has 4 minutes after the opponent's post.
+It uses iterative deepening around alpha-beta with the improved estimator. Use --history from the start of a game, or --placements for opening analysis. A move must be a legal successor, for either color, in the correct phase, and the team has 4 minutes after the opponent's post.
 
 ## Checks before handing work back
 

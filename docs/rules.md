@@ -16,7 +16,7 @@ A mill formed during the opening removes a piece, so the number of pieces on the
 
 Three of one color on a straight line, including the four corner diagonals, close a mill. The mover then removes one opponent piece that is not in a mill. An isolated piece is a piece that is not part of a mill.
 
-When every opponent piece is in a mill, any opponent piece may be removed. The handout's `GenerateRemove` ends with that case. The code in `morris/moves.py` removes one black piece in either case.
+When every opponent piece is in a mill, retain the moved board without a capture. This follows the final `GenerateRemove` line on page 4, which adds the board when no removal was added. The PDF's variable usage is ambiguous; this is our explicit interpretation, not an instructor-confirmed clarification. The same fallback preserves moves when no opponent pieces remain.
 
 ## Generators
 

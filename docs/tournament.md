@@ -2,7 +2,9 @@
 
 Each team is assigned at least three official opponents. Some teams get one extra opponent when the class size is uneven. The instructor publishes the matchup list. Only those matchups are official. Practice games are useful and are not reported.
 
-## Schedule
+The user reports a deadline extension. Confirm the new dates with the instructor; the dates below are the original PDF dates.
+
+## Original schedule
 
 - Agree on a time for every official match by 2026-10-08. If the teams cannot agree, contact the instructor, who may assign a time.
 - Play every official game by 2026-10-15.
@@ -74,3 +76,5 @@ The Teams chat remains the record if a reported line is disputed.
 - Use opening moves for the first 18 placements, then midgame and endgame rules. Hopping starts when that side has three pieces.
 - Search with minimax or alpha-beta.
 - Return a board inside the 4-minute window. Depth is the team's choice.
+
+Use `--history game.json` from the first turn to validate opponent boards and track placements/repetition. Use a new file per game. See README.md for commands and timing margins.

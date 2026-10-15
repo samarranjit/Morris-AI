@@ -80,13 +80,11 @@ def generate_hopping(board: str) -> list[str]:
 
 
 def generate_remove(board: list[str], positions: list[str]) -> None:
-    """Append positions that remove one Black piece.
+    """Remove an opponent piece outside a mill, if one is available.
 
-    An isolated piece (one that is not in a mill) is removed. When every
-    Black piece is in a mill, any Black piece may be removed. That is the
-    usual Morris rule, and it is what the handout's last line of
-    GenerateRemove is describing: if nothing was added because every
-    Black piece is in a mill, still produce a position with a removal.
+    Variant handout p. 4: if no removal was added, retain the board.
+    This also preserves a mill-forming move when no Black pieces remain.
+    Do not substitute the standard Morris rule allowing a mill capture.
     """
     start = len(positions)
     for location in range(BOARD_SIZE):
@@ -94,13 +92,8 @@ def generate_remove(board: list[str], positions: list[str]) -> None:
             nxt = board.copy()
             nxt[location] = EMPTY
             positions.append("".join(nxt))
-    if len(positions) > start:
-        return
-    for location in range(BOARD_SIZE):
-        if board[location] == BLACK:
-            nxt = board.copy()
-            nxt[location] = EMPTY
-            positions.append("".join(nxt))
+    if len(positions) == start:
+        positions.append("".join(board))
 
 
 def generate_moves_opening_black(board: str) -> list[str]:

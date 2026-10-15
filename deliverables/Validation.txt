@@ -1,0 +1,35 @@
+LOCAL VALIDATION - not official tournament results
+Run: python3 -m unittest discover -s tests -v; python3 tools/verify_project.py
+Timings are measurements on this machine, not guarantees on another machine.
+Search budget in timing cases: 1 second. No transposition table or move sorting.
+
+TIMINGS
+{'case': 'empty opening', 'requested_depth': 2, 'completed_depth': 2, 'seconds': 0.001594, 'evaluations': 68, 'timed_out': False}
+{'case': 'empty opening', 'requested_depth': 3, 'completed_depth': 3, 'seconds': 0.013824, 'evaluations': 611, 'timed_out': False}
+{'case': 'empty opening', 'requested_depth': 4, 'completed_depth': 4, 'seconds': 0.054843, 'evaluations': 2113, 'timed_out': False}
+{'case': 'midgame', 'requested_depth': 2, 'completed_depth': 2, 'seconds': 0.001707, 'evaluations': 49, 'timed_out': False}
+{'case': 'midgame', 'requested_depth': 3, 'completed_depth': 3, 'seconds': 0.011949, 'evaluations': 342, 'timed_out': False}
+{'case': 'midgame', 'requested_depth': 4, 'completed_depth': 4, 'seconds': 0.059825, 'evaluations': 1762, 'timed_out': False}
+{'case': 'hopping', 'requested_depth': 2, 'completed_depth': 2, 'seconds': 0.011097, 'evaluations': 191, 'timed_out': False}
+{'case': 'hopping', 'requested_depth': 3, 'completed_depth': 3, 'seconds': 0.231618, 'evaluations': 4780, 'timed_out': False}
+{'case': 'hopping', 'requested_depth': 4, 'completed_depth': 4, 'seconds': 0.690968, 'evaluations': 12397, 'timed_out': False}
+
+GAMES
+First four moves are seeded legal placements. Every subsequent move and the full history are validated.
+Four games compare evaluators at depth 2, using the same alpha-beta and swapped colors.
+Two games use the timed tournament runner for both colors. A test cap is not a game rule.
+{'seed': 7, 'improved_color': 'white', 'depth': 2, 'result': 'white', 'plies': 57, 'slowest_move_seconds': 0.009118}
+{'seed': 7, 'improved_color': 'black', 'depth': 2, 'result': 'black', 'plies': 58, 'slowest_move_seconds': 0.00561}
+{'seed': 4346, 'improved_color': 'white', 'depth': 2, 'result': 'draw', 'plies': 31, 'slowest_move_seconds': 0.003332}
+{'seed': 4346, 'improved_color': 'black', 'depth': 2, 'result': 'black', 'plies': 42, 'slowest_move_seconds': 0.009906}
+{'seed': 12, 'improved_color': 'both', 'depth': 2, 'result': 'white', 'plies': 61, 'slowest_move_seconds': 0.020501}
+{'seed': 19, 'improved_color': 'both', 'depth': 2, 'result': 'white', 'plies': 43, 'slowest_move_seconds': 0.013749}
+
+This small deterministic sample is a regression check, not statistical proof of superiority.
+Opponent implementations and deeper searches may perform differently. Retune only after measured comparisons.
+
+FINAL CHECKS
+46 automated tests passed in the original project folder.
+All nine entry scripts passed from a clean ZIP extraction.
+Real 0.05-second budget: completed depth 3, next iteration interrupted, legal move returned in about 0.05003 seconds.
+Baseline estimator verified byte-for-byte unchanged.

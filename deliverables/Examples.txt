@@ -1,45 +1,58 @@
-Examples for CS4346 Morris AI
-Fill this file before submission. The project handout requires the cases below.
+CS4346 Morris AI - reproducible examples
+Rule: when every opposing piece is in a mill, retain the move without capture (Variant p. 4).
+Depth counts individual turns. Counts are actual static-estimator calls.
+Run: python3 tools/verify_project.py --examples-only
 
-1. Alpha-beta evaluates fewer positions than minimax
-
-Need at least two positions. For each one, record the input board, the depth,
-the move both algorithms chose, the shared minimax estimate, and the two
-evaluation counts.
+PART II: ALPHA-BETA PRUNING
 
 Case 1
-Board:
-Depth:
-Move:
-MINIMAX estimate:
-Positions evaluated by minimax:
-Positions evaluated by alpha-beta:
+Input board: xxxxxBxWWWWWBBBBxxxxxxx
+Phase: opening
+Depth: 3
+Both selected: xxxxxxxWWWWWBBBBWxxxxxx
+Move: f1: B->x, e4: x->W
+Shared MINIMAX estimate: 2
+Minimax evaluations: 3778
+Alpha-beta evaluations: 481
+Alpha-beta skips branches that cannot change the decision; strict comparisons preserve the first tied move.
 
 Case 2
-Board:
-Depth:
-Move:
-MINIMAX estimate:
-Positions evaluated by minimax:
-Positions evaluated by alpha-beta:
+Input board: WxWWxWWWWWBBBBBBBBxxxxx
+Phase: midgame
+Depth: 3
+Both selected: xWWWxWWWWWBBBBBBBBxxxxx
+Move: a0: W->x, d0: x->W
+Shared MINIMAX estimate: 993
+Minimax evaluations: 544
+Alpha-beta evaluations: 129
+Alpha-beta skips branches that cannot change the decision; strict comparisons preserve the first tied move.
 
-2. Improved estimator chooses a different move
-
-Need at least two positions. For each one, record the baseline move, the
-improved move, and why the improved move is preferred.
+PART IV: IMPROVED EVALUATION
 
 Case 1
-Board:
-Phase:
-Depth:
-Baseline move:
-Improved move:
-Why the improved move is better:
+Input board: WxWWxWWWWWBBBBBBBBxxxxx
+Phase: opening
+Depth: 2
+Baseline move: WWWWxWWWWWBBBBBBBxxxxxx
+Baseline change: d0: x->W, b5: B->x
+Baseline estimate: 1
+Improved move: WxWWxWWWWWBBBBBBBxxxWxx
+Improved change: b5: B->x, a6: x->W
+Improved estimate: 162
+Scores use different scales; compare choices, not their numerical magnitudes.
+Improved immediate-board feature differences: {'pieces': 2, 'mills': 1, 'open_mills': 3, 'mobility': 2, 'blocked': 1, 'threats': 1, 'connections': 7}
+Why preferred: Both choices capture a Black piece. The improved choice places at a6, which participates in three mill lines; the baseline places at d0, which participates in one. After the selected move the White-minus-Black mill-incidence count is 7 rather than 5. This gives more future mill connections. The decision also considers the opponent's reply at depth 2.
 
 Case 2
-Board:
-Phase:
-Depth:
-Baseline move:
-Improved move:
-Why the improved move is better:
+Input board: xxxxxBxWWWWWBBBBxxxxxxx
+Phase: midgame
+Depth: 2
+Baseline move: xxxxxBxWWWWxBBBBWxxxxxx
+Baseline change: e3: W->x, e4: x->W
+Baseline estimate: -13
+Improved move: xxxxxBxWWxWWBBBBxWxxxxx
+Improved change: b3: W->x, b5: x->W
+Improved estimate: -45
+Scores use different scales; compare choices, not their numerical magnitudes.
+Improved immediate-board feature differences: {'pieces': 0, 'mills': 0, 'open_mills': 0, 'mobility': 3, 'blocked': -1, 'threats': 1, 'connections': -1}
+Why preferred: The improved move slides b3 to b5, opening the existing a3-b3-c3 mill. It preserves the ability to slide back and reform that mill while increasing movement options. Its mobility difference is +3 rather than +1, its blocked-piece difference is -1 rather than 0, and its legal mill-threat difference is +1 rather than 0. The baseline instead slides e3 to e4. The new evaluator values active threats and freedom of movement as well as material. These are positional reasons, not a proof of a forced win.

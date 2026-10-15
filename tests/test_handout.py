@@ -129,16 +129,14 @@ class MoveTests(unittest.TestCase):
         self.assertEqual(placed[0][18], "x")
         self.assertEqual(placed[0][8:11], "BBB")
 
-    def test_when_all_black_pieces_are_in_mills_any_may_be_removed(self):
+    def test_all_black_pieces_in_mills_keeps_board_without_capture(self):
         board = empty_board()
         board[1] = board[2] = "W"
         board[8] = board[9] = board[10] = "B"
-        moves = generate_add("".join(board))
-        placed = [move for move in moves if move[0] == "W"]
-        removed = [
-            tuple(index for index in (8, 9, 10) if move[index] == "x") for move in placed
-        ]
-        self.assertEqual(sorted(removed), [(8,), (9,), (10,)])
+        placed = [move for move in generate_add("".join(board)) if move[0] == "W"]
+        expected = board.copy()
+        expected[0] = "W"
+        self.assertEqual(placed, ["".join(expected)])
 
     def test_midgame_slides_only_to_neighbors(self):
         board = "x" * 23

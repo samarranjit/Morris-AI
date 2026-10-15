@@ -44,9 +44,9 @@ def run(argv: list[str], *, phase: str, algorithm: str, color: str, estimation: 
     try:
         depth = int(depth_text)
         if depth < 0:
-            raise ValueError
+            raise ValueError('depth must be nonnegative')
         board = read_board(input_path)
-    except ValueError as exc:
+    except (ValueError, OSError) as exc:
         print(exc, file=sys.stderr)
         return 2
 
@@ -55,13 +55,17 @@ def run(argv: list[str], *, phase: str, algorithm: str, color: str, estimation: 
     query = swap_colors(board) if color == "black" else board
     try:
         chosen, evaluated, value = search(query, depth, phase=phase, estimate=estimate)
-    except NotImplementedError as exc:
+    except (ValueError, OSError, NotImplementedError) as exc:
         print(exc, file=sys.stderr)
         return 1
 
     if color == "black":
         chosen = swap_colors(chosen)
-    write_board(output_path, chosen)
+    try:
+        write_board(output_path, chosen)
+    except OSError as exc:
+        print(exc, file=sys.stderr)
+        return 2
     print(f"Board Position: {chosen}")
     print(f"Positions evaluated by static estimation: {evaluated}")
     print(f"MINIMAX estimate: {value}")

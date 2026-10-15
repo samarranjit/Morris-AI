@@ -1,18 +1,97 @@
-Improved static estimation for CS4346 Morris AI
-Replace this outline with the team's explanation before submission.
+CS4346 - Improved Static Estimation
 
 1. Features used
 
+Every feature difference below means White's count minus Black's count.
+A positive score favors White. For a Black program, the board colors are
+swapped before searching, so a positive reported score favors Black.
+
+P: number of pieces.
+O: open mill lines containing exactly two own pieces and one empty location.
+M: completed mill lines. Each of the board's 18 lines is counted once.
+C: mill connections: sum of the number of mill lines through each occupied
+   location. For example, a6 belongs to three lines; d0 belongs to one.
+T: legal movement routes that would close a mill. A route is an origin and
+   a destination, counted once even if it closes two lines. The origin may
+   not be one of the two pieces required to remain in the completed mill.
+V: legal movement routes before enumerating capture choices. For a player
+   with exactly three pieces, every empty destination is available to each
+   piece. Otherwise only adjacent empty destinations are available.
+B: blocked pieces, meaning pieces with no permitted movement destination.
+   Hopping players are not considered blocked merely by occupied neighbors.
+
+O and C are opening features. T, V, and B are midgame/endgame features.
+A mill-closing route is not necessarily a capture: under our reading of the
+handout, all opposing pieces in mills are protected. T therefore measures
+mill-forming opportunity, not guaranteed material gain.
+
 2. Why these features were selected
+
+Material matters because the objective includes reducing the opponent to two
+pieces. In the opening, the original evaluator cannot distinguish most
+non-capturing placements. Open mills recognize potential captures on a later
+placement, and connections reward access to several useful lines.
+
+In the moving phases, merely counting two pieces on a line is insufficient:
+a legal move must reach the empty endpoint without removing a required piece.
+T accounts for this. Mobility helps avoid being trapped. A blocked piece is
+less useful until a route opens. Completed mills describe current structure,
+but receive less weight than material and actionable mill-forming threats.
+
+We use a small set of board counts to keep leaf evaluation understandable and
+reasonably inexpensive. There is no nested search inside the evaluator.
 
 3. How the features are combined
 
-4. Why this evaluation is stronger than the handout estimator
+Opening score = 100*P + 20*O + 10*M + 3*C
 
-The handout estimator is piece difference in the opening, and in the
-midgame/endgame it is 1000 times the piece difference minus the number of
-Black moves, with 10000 / -10000 for the terminal cases.
+Midgame/endgame score = 1000*P + 60*T + 25*M + 5*V - 20*B
 
-The project handout lists optional features: piece difference, number of
-moves, mobility, completed mills, potential mills, blocked opponent pieces,
-and useful squares. Use the ones that have a reason in the game.
+Ordinary scores are clamped to [-9000, 9000]. Terminal wins/losses use
++10000/-10000, so positional bonuses cannot outrank a proven game result.
+The weights are manually chosen starting weights, not mathematically optimal
+or learned coefficients. Material has the largest individual coefficient;
+several positional features can still combine to outweigh a material term.
+
+The improved midgame evaluator returns +10000 if Black has at most two
+pieces, and -10000 if White has at most two. Search separately checks whether
+the player whose turn it is has no legal moves, including at depth zero.
+The tournament search also scores a third occurrence of the same board and
+side to move as zero when a complete history is supplied.
+
+Opening does not apply the two-piece terminal test while pieces remain to be
+placed. The tournament tracks placements separately and switches to the
+midgame evaluator after the eighteenth placement, even inside a search line.
+The required fixed-phase assignment programs keep the phase specified by
+the program name throughout their search, as in the handout interface.
+
+4. Why we believe it improves on the original function
+
+The original opening formula is only piece difference. Our opening formula
+can prefer useful development before any capture is available. The original
+midgame formula is 1000*piece_difference minus Black's generated move count.
+Our formula explicitly measures both players' movement freedom, blockages,
+and achievable mill-forming moves. Its movement count does not inflate one
+route merely because several different capture targets are available.
+
+Examples.txt supplies two reproducible disagreements at equal search depths,
+with the actual chosen boards, scores, and reasons for preferring the new
+moves. Numerical scores from different evaluators are not directly comparable.
+
+In four local depth-2 comparison games from two seeded openings, with colors
+swapped and the same alpha-beta search for both evaluators, the improved
+agent won three games and drew one. Every move was validated and repetition
+was tracked. This is a small regression experiment, not proof of tournament
+superiority. Validation.txt and validation.json record the experiment and
+full histories. We would need broader opponents and time-controlled matches
+to make stronger claims.
+
+Rule interpretation
+
+Morris-Variant.pdf page 4 ends GenerateRemove by adding the board when no
+removal was possible. We implement this as keeping the mill-forming move
+without removing a piece when all opponents are in mills (or none remain).
+The PDF's use of the variable b is ambiguous. This interpretation is explicit;
+it is not an instructor-confirmed clarification. If the instructor supplies a
+different ruling, update generate_remove and its tests, then regenerate all
+examples and validation results before submission or official play.

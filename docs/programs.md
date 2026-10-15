@@ -35,7 +35,7 @@ Black programs may use the color-swap method in the Morris handout. This repo do
 `TournamentAgent.py` is optional in the ZIP only if the team folds everything into the other programs. This repo keeps it as its own file. Suggested call:
 
 ```bash
-python programs/TournamentAgent.py <input> <output> <depth> <white|black> <opening|midgame>
+python programs/TournamentAgent.py <input> <output> <depth> <white|black> <opening|midgame> --history <game.json>
 ```
 
 ## Parts
