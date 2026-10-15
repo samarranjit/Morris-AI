@@ -39,7 +39,7 @@ python programs/TournamentAgent.py
 python programs/TournamentAgent.py <input> <output> <depth> <white|black> <opening|midgame> --history <game.json>
 ```
 
-With no board arguments it opens the interactive match console used for official games. With board arguments it makes one timed move. See README.md.
+With no board arguments it opens the interactive match console used for official games. With board arguments it makes one timed move. See [tournament.md](tournament.md).
 
 ## Parts
 
@@ -58,7 +58,36 @@ Tournament wins and losses are not the grade. Part V is graded on legal moves, p
 
 `MyStaticEstimation.txt` has to cover the features, why they were chosen, how they are combined, and why the result is stronger than the handout estimator, plus at least two boards where the improved estimator chooses a different move, with a short reason for preferring it.
 
-Both files are written in `deliverables/`. README.md maps each requirement to the section that answers it.
+Both files are written in `deliverables/`. The Submission section below maps each requirement to the section that answers it.
+
+## Submission
+
+One ZIP per team. Build it with:
+
+```bash
+python3 tools/build_submission.py
+```
+
+It writes `dist/Morris-AI-submission.zip` with the nine programs at the archive root, the `morris/` package beside them, `Examples.txt`, and `MyStaticEstimation.txt`. It then extracts the archive in a clean folder and runs all nine programs there. The programs need `morris/` next to them.
+
+Where each written requirement is answered:
+
+| Handout requirement | Answered in |
+| --- | --- |
+| Part II: at least two cases where alpha-beta evaluates fewer positions than minimax | `Examples.txt`, Part II |
+| Part IV: features used by the improved estimator | `MyStaticEstimation.txt`, section 1 |
+| Part IV: why those features were selected | `MyStaticEstimation.txt`, section 2 |
+| Part IV: how they are combined | `MyStaticEstimation.txt`, section 3 |
+| Part IV: why it is better than the original estimator | `MyStaticEstimation.txt`, section 4 |
+| Part IV: two boards where the improved estimator picks a different move, and why | `MyStaticEstimation.txt`, section 5, and `Examples.txt`, Part IV |
+
+`Examples.txt` is generated from real runs of the submitted programs. Regenerate it after any change to search or the estimators:
+
+```bash
+python3 tools/verify_project.py --examples-only
+```
+
+That command fails if `MyStaticEstimation.txt` quotes a move the programs no longer choose. Section 5 of that file is written by hand, so update it when that happens. Without `--examples-only`, the script also regenerates `Validation.txt` and `validation.json` (timings and local games). Those two files are evidence for the team and are not submitted.
 
 ## Development notes from the project handout
 

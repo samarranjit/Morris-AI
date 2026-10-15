@@ -1,175 +1,96 @@
-# Morris AI: complete implementation
+# Morris AI
 
-Python 3.10 or newer; standard library only. Run commands from this folder.
-The original course PDFs remain in `docs/`. See `EXPLANATION.md` for a beginner
-walkthrough, limitations, and the exact rule interpretation used.
+A game-playing agent for the **Morris Game, Variant**, a version of Nine Men's Morris on a 23-location board. Built for CS4346 (Introduction to Artificial Intelligence) at Texas State University.
 
-```bash
-python3 -m unittest discover -s tests -v
-python3 programs/MiniMaxOpening.py examples/empty_board.txt out/move.txt 2
-python3 programs/ABGame.py examples/handout_position_1.txt out/move.txt 3
-```
+The agent chooses moves with **minimax** and **alpha-beta pruning**, scoring positions with a static estimation function. The project has five parts:
 
-The eight assignment programs accept input file, output file, and depth.
-They print exactly three lines and write the selected 23-character board.
-Black programs report values from Black's perspective. Depth zero evaluates
-the input without choosing a move; use depth >= 1 when playing.
+1. **Minimax** for the opening and for the midgame/endgame.
+2. **Alpha-beta**, which returns the same move as minimax while evaluating fewer positions.
+3. **Playing Black** by swapping colors around the White search.
+4. **An improved static estimator** that looks at mills, threats, mobility, and blocked pieces, not only material.
+5. **A tournament agent** that plays timed matches against other teams' agents.
 
-## Tournament: interactive console (use this for official games)
+Python 3.10 or newer. Standard library only.
 
-Run the tournament agent with no board arguments:
+## Quick start
 
 ```bash
+python3 -m unittest discover -s tests
+python3 programs/MiniMaxOpening.py examples/empty_board.txt out/board.txt 2
 python3 programs/TournamentAgent.py
 ```
 
-On macOS you can instead double-click `programs/Start-Tournament.command`.
+The second command picks White's best opening move at depth 2 and prints:
 
-Choose `new`, then `white` or `black`. Press Enter for a 180-second search
-budget and depth ceiling 12. Use 2 seconds for a quick practice session.
-
-- White: the agent calculates immediately and prints your first Teams message.
-- Black: the console waits for White's board before calculating your response.
-- Paste a 23-character opponent board and press Enter. The two-line Teams post
-  (`Move N - Color` followed by its board) is also accepted.
-- An illegal board is rejected without advancing the game. Paste again.
-- After a valid board, the agent searches and prints two lines to copy to Teams.
-  Post them yourself; the console never posts online.
-
-The console tracks phase changes, hopping, move numbers, and threefold
-repetition. It stops when the game ends. The saved state assumes you post the
-displayed move, so do not post a different board.
-
-Commands while waiting for the opponent:
-
-- `show`: display the current board and the last recorded move.
-- `time 60`: give future searches 60 seconds instead of the current budget.
-- `quit`: stop. Progress is already saved.
-
-The opponent's Teams timestamp starts the four-minute window, and waiting to
-paste their move uses part of it. Lower the budget with `time N` when needed.
-
-Every new game gets its own session JSON in `out/tournament-console/`, and the
-path is printed in Terminal. To resume, run the console and choose `resume`, or:
-
-```bash
-python3 programs/TournamentAgent.py --resume out/tournament-console/<session>.json
+```
+Board Position: <23 characters>
+Positions evaluated by static estimation: <count>
+MINIMAX estimate: <value>
 ```
 
-A move your team already calculated is shown again, not recalculated. If the
-opponent's move was saved but the search was interrupted, search restarts from
-that board. Ctrl+C or closing Terminal does not erase accepted moves.
-A session JSON is not the same file as a `--history` array below; keep using
-whichever one a game started with.
+The third opens the interactive tournament console.
 
-## Tournament: one move per command
+## Board representation
 
-The same program also runs a single move from a board file. Keep one history
-file per game. First move as White:
+A position is a 23-character string. `W` is a White piece, `B` a Black piece, and `x` an empty location. Index 0 is `a0` at the bottom-left, and the string reads left to right, bottom to top. [docs/board.md](docs/board.md) lists every location, its neighbors, and its mills.
 
-```bash
-python3 programs/TournamentAgent.py examples/empty_board.txt out/move.txt 12 white opening --seconds 180 --history out/game1.json
+## Project structure
+
+```
+morris/                     game engine (shared by every program)
+  board.py                  23 locations, neighbors, mills, color swap
+  moves.py                  move generators: placing, sliding, hopping, captures
+  estimation.py             original static estimators from the handout
+  improved.py               improved static estimators (Part IV)
+  search.py                 minimax and alpha-beta
+  tournament.py             timed search, match history, interactive console
+  cli.py, io.py             command-line handling and board files
+
+programs/                   required entry points, one per assignment program
+  MiniMaxOpening.py         White, minimax, opening
+  MiniMaxGame.py            White, minimax, midgame/endgame
+  ABOpening.py              White, alpha-beta, opening
+  ABGame.py                 White, alpha-beta, midgame/endgame
+  MiniMaxOpeningBlack.py    Black, minimax, opening
+  MiniMaxGameBlack.py       Black, minimax, midgame/endgame
+  MiniMaxOpeningImproved.py White, minimax, opening, improved estimator
+  MiniMaxGameImproved.py    White, minimax, midgame/endgame, improved estimator
+  TournamentAgent.py        match agent for either color and phase
+
+deliverables/               written answers submitted with the code
+  Examples.txt              alpha-beta and improved-estimator examples
+  MyStaticEstimation.txt    design of the improved estimator
+
+tests/                      unit tests for rules, search, programs, tournament
+tools/                      example regeneration and submission ZIP builder
+examples/                   sample board files
+docs/                       course handouts and project notes
 ```
 
-Save the opponent's next board as `out/opponent.txt`, then run:
+Each file in `programs/` is a few lines long. It selects the search, color, phase, and estimator, then calls the shared engine in `morris/`.
 
-```bash
-python3 programs/TournamentAgent.py out/opponent.txt out/move.txt 12 white opening --seconds 180 --history out/game1.json
-```
+## How it works
 
-For Black's first turn, save White's first posted board in the input file and
-use a new history filename with `black opening`. The runner infers the initial
-empty board and checks White's first placement. After the first 18 placements,
-use `midgame`. The history is updated automatically for the opponent's input
-and our selected move. Use a new history file for the next official game.
+- **Moves.** `moves.py` follows the handout's pseudocode for White. Black's moves are generated by swapping colors, generating White's moves, and swapping back.
+- **Search.** `search.py` has one recursive search. White maximizes and Black minimizes. Alpha-beta is the same search with cutoffs enabled, so both return the same move and value.
+- **Estimation.** `estimation.py` keeps the handout's functions unchanged. `improved.py` adds the Part IV functions, explained in `deliverables/MyStaticEstimation.txt`.
+- **Tournament.** `tournament.py` runs alpha-beta with iterative deepening inside a time budget, validates every move against the game history, and detects threefold repetition.
 
-Depth 12 is a ceiling, not a promise to finish twelve plies. The runner searches
-1, 2, 3, ... and uses the last fully completed result within the time budget.
-The default budget is 180 seconds; the maximum accepted budget is 210 seconds.
-The tournament allows four minutes INCLUDING copying, checking, and posting.
-The search timer starts when the program runs, not when Teams received the
-opponent's post. Reduce --seconds when you have already used part of the window.
+[EXPLANATION.md](EXPLANATION.md) walks through each part in detail.
 
-Without history, provide the known placement count during opening:
+## Documentation
 
-```bash
-python3 programs/TournamentAgent.py examples/empty_board.txt out/move.txt 6 white opening --placements 0 --seconds 10
-```
-
-Without history, the program cannot validate the opponent's prior move or
-recognize historical threefold repetitions. Track those manually. It never
-infers the opening phase from surviving piece counts. Do not use synthetic
-handout diagrams as a new match-history starting point; use --placements for
-standalone analysis of such positions.
-
-Only post an output after a successful exit (code 0), and check the three-line
-result. Diagnostics such as completed depth go to stderr. A failed command may
-leave an OLD output file in place; never mistake it for a new decision.
-
-## Written answers for the submission
-
-The handout asks for two text files with the code. Both are in `deliverables/`
-and both go into the ZIP.
-
-| Handout requirement | Answered in |
+| Document | Contents |
 | --- | --- |
-| Part II: at least two cases where alpha-beta evaluates fewer positions than minimax | `Examples.txt`, Part II (cases 1 and 2) |
-| Part IV: features used by the improved estimator | `MyStaticEstimation.txt`, section 1 |
-| Part IV: why those features were selected | `MyStaticEstimation.txt`, section 2 |
-| Part IV: how they are combined | `MyStaticEstimation.txt`, section 3 |
-| Part IV: why it is better than the original estimator | `MyStaticEstimation.txt`, section 4 |
-| Part IV: two boards where the improved estimator picks a different move, and why | `MyStaticEstimation.txt`, section 5, and `Examples.txt`, Part IV |
+| [EXPLANATION.md](EXPLANATION.md) | How the move generator, search, estimators, and tournament agent work |
+| [docs/rules.md](docs/rules.md) | Game rules and the handout's move generators |
+| [docs/board.md](docs/board.md) | The 23 board locations, neighbors, and mills |
+| [docs/programs.md](docs/programs.md) | Required programs, output format, grading, and submission |
+| [docs/tournament.md](docs/tournament.md) | Running the tournament agent and the match protocol |
+| [CHECKLIST.md](CHECKLIST.md) | Completed work and remaining team tasks |
 
-Each example in `Examples.txt` shows the command and the three lines the
-submitted program printed. Regenerate it after any change to the search or the
-estimators:
+The original assignment handouts are `docs/Project.pdf` and `docs/Morris-Variant.pdf`.
 
-```bash
-python3 tools/verify_project.py --examples-only
-```
+## Rule interpretation
 
-That command also stops with an error if `MyStaticEstimation.txt` quotes a
-move the programs no longer choose. Section 5 of that file is written by hand,
-so update it if this happens.
-
-## Evidence and submission
-
-```bash
-python3 tools/verify_project.py
-python3 tools/build_submission.py
-```
-
-- `deliverables/Examples.txt`: the Part II and Part IV examples (submitted).
-- `deliverables/MyStaticEstimation.txt`: the Part IV written answers (submitted).
-- `deliverables/Validation.txt`: measured timing and local game results (not submitted).
-- `deliverables/validation.json`: machine-readable results and complete games (not submitted).
-- `dist/Morris-AI-submission.zip`: nine entry scripts at ZIP root, `morris/`,
-  the two required text files, and concise submission notes.
-
-The build script extracts the archive in a fresh temporary directory and runs
-all nine entry points there. Include the `morris/` package: the entry scripts
-are intentionally small wrappers and depend on it.
-
-## Course and rule notes
-
-Search remains minimax/alpha-beta. There is no MCTS, neural network, external
-engine, opening database, or learned policy. The baseline estimator is unchanged.
-
-Capture fallback follows Variant PDF p. 4: if there is no opposing piece outside
-a mill, retain the move without capture. This is an explicit interpretation of
-ambiguous pseudocode, not an instructor-confirmed ruling. See EXPLANATION.md.
-
-The user reports an extension to the printed deadlines. Confirm the new dates
-in the course announcement. No matches have been scheduled, posted, or reported
-by these tools. Tournament participation and official reporting remain team tasks.
-
-## Other documents
-
-- [EXPLANATION.md](EXPLANATION.md): how the move generator, minimax, alpha-beta,
-  estimators, and tournament agent work. Read it before explaining the code.
-- [CHECKLIST.md](CHECKLIST.md): what is done and what the team still has to do.
-- [docs/rules.md](docs/rules.md), [docs/board.md](docs/board.md): the game rules
-  and the 23 board locations.
-- [docs/programs.md](docs/programs.md): the required programs, output format,
-  and grading weights.
-- [docs/tournament.md](docs/tournament.md): match protocol and result reporting.
+When a move closes a mill and every opposing piece is already in a mill, the move is kept without a capture. This follows the last line of `GenerateRemove` on page 4 of the Morris Variant handout. The handout's pseudocode is ambiguous here, and this reading has not been confirmed by the instructor.

@@ -34,7 +34,8 @@ The second command regenerates Examples.txt (drop --examples-only to also
 regenerate Validation.txt and validation.json, which takes longer).
 The third rebuilds dist/Morris-AI-submission.zip and verifies a clean extraction.
 
-Read README.md for usage and EXPLANATION.md for the implementation walkthrough.
+Read README.md for the overview, docs/tournament.md for running matches, and
+EXPLANATION.md for the implementation walkthrough.
 
 ## Decisions to retain
 We follow the last GenerateRemove line on Variant PDF page 4: if no opposing

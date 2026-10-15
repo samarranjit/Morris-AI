@@ -32,7 +32,7 @@
 - [x] Examples.txt Part II: two pruning cases with commands and real program output.
 - [x] Examples.txt Part IV: two improved-move disagreements with program output and reasons.
 - [x] MyStaticEstimation.txt: the four required answers, plus the two boards in section 5.
-- [x] README maps each handout requirement to the file section that answers it.
+- [x] docs/programs.md maps each handout requirement to the file section that answers it.
 - [x] Beginner walkthrough in EXPLANATION.md.
 
 ## 7. Tournament and packaging

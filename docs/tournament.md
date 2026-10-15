@@ -77,4 +77,68 @@ The Teams chat remains the record if a reported line is disputed.
 - Search with minimax or alpha-beta.
 - Return a board inside the 4-minute window. Depth is the team's choice.
 
-For official games, run `python3 programs/TournamentAgent.py` with no arguments. The interactive console validates opponent boards, tracks placements and repetition, numbers the moves, and prints each Teams post. It saves one session file per game, so a game can be resumed. The single-move mode with `--history game.json` does the same checks from the command line. See README.md for commands and timing margins.
+## Running the agent: interactive console (use this for official games)
+
+Run the tournament agent with no board arguments:
+
+```bash
+python3 programs/TournamentAgent.py
+```
+
+On macOS you can instead double-click `programs/Start-Tournament.command`.
+
+Choose `new`, then `white` or `black`. Press Enter for a 180-second search budget and depth ceiling 12. Use 2 seconds for a quick practice session.
+
+- White: the agent calculates immediately and prints your first Teams message.
+- Black: the console waits for White's board before calculating your response.
+- Paste a 23-character opponent board and press Enter. The two-line Teams post (`Move N - Color` followed by its board) is also accepted.
+- An illegal board is rejected without advancing the game. Paste again.
+- After a valid board, the agent searches and prints two lines to copy to Teams. Post them yourself; the console never posts online.
+
+The console tracks phase changes, hopping, move numbers, and threefold repetition. It stops when the game ends. The saved state assumes you post the displayed move, so do not post a different board.
+
+Commands while waiting for the opponent:
+
+- `show`: display the current board and the last recorded move.
+- `time 60`: give future searches 60 seconds instead of the current budget.
+- `quit`: stop. Progress is already saved.
+
+The opponent's Teams timestamp starts the four-minute window, and waiting to paste their move uses part of it. Lower the budget with `time N` when needed.
+
+Depth 12 is a ceiling, not a promise to finish twelve plies. The agent searches depth 1, 2, 3, ... and keeps the last result that finished within the time budget. The default budget is 180 seconds and the maximum is 210, which leaves time to copy and post.
+
+Every new game gets its own session JSON in `out/tournament-console/`, and the path is printed in Terminal. To resume, run the console and choose `resume`, or:
+
+```bash
+python3 programs/TournamentAgent.py --resume out/tournament-console/<session>.json
+```
+
+A move your team already calculated is shown again, not recalculated. If the opponent's move was saved but the search was interrupted, search restarts from that board. Ctrl+C or closing Terminal does not erase accepted moves.
+
+## Running the agent: one move per command
+
+The same program also makes a single move from a board file. Keep one history file per game. A session JSON from the console is not the same file as a `--history` array; keep using whichever one a game started with.
+
+First move as White:
+
+```bash
+python3 programs/TournamentAgent.py examples/empty_board.txt out/move.txt 12 white opening --seconds 180 --history out/game1.json
+```
+
+Save the opponent's next board as `out/opponent.txt`, then run:
+
+```bash
+python3 programs/TournamentAgent.py out/opponent.txt out/move.txt 12 white opening --seconds 180 --history out/game1.json
+```
+
+For Black's first turn, save White's first posted board in the input file and use a new history filename with `black opening`. The runner infers the initial empty board and checks White's first placement. After the first 18 placements, use `midgame`. The search timer starts when the program runs, so reduce `--seconds` when part of the four minutes is already used.
+
+Without history, give the placement count during the opening:
+
+```bash
+python3 programs/TournamentAgent.py examples/empty_board.txt out/move.txt 6 white opening --placements 0 --seconds 10
+```
+
+Without history, the program cannot validate the opponent's prior move or recognize earlier repetitions; track those manually. It never infers the opening phase from piece counts.
+
+Only post an output after a successful exit (code 0). Diagnostics such as completed depth go to stderr. A failed command may leave an old output file in place; never mistake it for a new decision.
