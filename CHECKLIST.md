@@ -71,16 +71,16 @@ Ground rules for this whole section:
 
 ### 8.3 Using every core
 Python threads cannot run the search in parallel, so this uses separate processes.
-- [ ] Root splitting: send the root moves to a `concurrent.futures.ProcessPoolExecutor` with one worker per core (`os.cpu_count()`). Each worker runs the alpha-beta from 8.2 on its moves.
-- [ ] Send the most promising moves first (using the order from the previous depth), so the best bound is found early.
-- [ ] Share the best root score between workers (`multiprocessing.Value`), so later moves are searched with a tighter alpha and prune more.
-- [ ] Give each worker its own transposition table, and reuse workers across depths and moves so their tables stay warm.
-- [ ] Time budget across processes: each worker checks a shared deadline, and the parent keeps the last fully finished depth. A worker that is cut off can never replace a finished result.
-- [ ] Use `if __name__ == "__main__"` guards and the `spawn` start method, so it works on macOS and Windows.
-- [ ] Optional, after root splitting works: split deeper (for example the first two plies) when the root has few moves, as often happens in the hopping endgame.
-- [ ] Test: at fixed depth, the parallel and single-process versions return the same value; the parallel version never returns an illegal move; the deadline holds when a worker hangs or crashes.
-- [ ] Add `--workers N`, defaulting to the core count. Keep `--workers 1` as a safe fallback.
-- [ ] Benchmark at 1, 2, 4, and all cores. Keep the setting that reaches the most depth.
+- [x] Root splitting, entirely inside `programs/TournamentAgent.py` (the `morris/` package is unchanged): root moves go to a `ProcessPoolExecutor` with one worker per core (`os.cpu_count()`). Each worker runs alpha-beta, with the same rules as `morris/search.py`, on its move.
+- [x] Search the most promising move first, alone, then the rest in parallel, ordered by the previous depth's scores.
+- [x] Share the best root score between workers (`multiprocessing.Array`), so later moves are searched with a tighter alpha. Earlier moves use alpha one lower, so ties still go to the first generated move.
+- [ ] Give each worker its own transposition table, and reuse workers across depths and moves so their tables stay warm. (Workers are reused; the tables wait for 8.2.)
+- [x] Time budget across processes: each worker checks the same deadline, and the parent keeps the last fully finished depth.
+- [x] `if __name__ == "__main__"` guards and the `spawn` start method, so it works on macOS and Windows.
+- [ ] Optional: split deeper (for example the first two plies) when the root has few moves, as often happens in the midgame and hopping endgame.
+- [x] Tests in `tests/test_parallel.py`: same board and value as sequential alpha-beta on random opening and midgame positions, depths 2-4, the phase change, and repetition counts; deadline; tiny budget.
+- [x] `--workers N` in both TournamentAgent modes, defaulting to the core count. Falls back to one process if workers cannot start or die.
+- [x] Benchmark (`tools/benchmark.py`): 1.5x to 3.8x faster at depth 7 on 14 cores; results in `docs/tournament.md`.
 
 ### 8.4 Smarter time use
 - [ ] Spend the budget by situation: more on complex midgame boards and when the score drops between depths, less on forced moves.

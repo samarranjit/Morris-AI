@@ -19,6 +19,8 @@ Guide for coding agents working in this repository. Read this before changing co
 | `morris/search.py` | Part I minimax and Part II alpha-beta. Both are implemented and tested. |
 | `morris/cli.py` | Shared argument parsing and the three-line output. |
 | `morris/tournament.py` | Timed iterative-deepening alpha-beta, match history, and the interactive match console. |
+| `programs/TournamentAgent.py` | Also holds the tournament-only parallel search (root moves split across worker processes), so the agent can be shared as this one file plus `morris/`. Keep it there. Its alpha-beta must follow `morris/search.py` and return the same board and value (`tests/test_parallel.py`). |
+| `tools/benchmark.py` | Depth reached and evaluations per second for different worker counts. |
 | `tools/verify_project.py` | Regenerates `Examples.txt` from real program runs, plus timings and local games. |
 | `tools/build_submission.py` | Builds and smoke-tests the submission ZIP. |
 | `programs/*.py` | Required program names. Run them as `python programs/MiniMaxOpening.py`. Each one only calls `morris.cli.run`. Copy these files to the ZIP root at submission time. |

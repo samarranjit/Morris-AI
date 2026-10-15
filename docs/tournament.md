@@ -105,7 +105,9 @@ Commands while waiting for the opponent:
 
 The opponent's Teams timestamp starts the four-minute window, and waiting to paste their move uses part of it. Lower the budget with `time N` when needed.
 
-Depth 12 is a ceiling, not a promise to finish twelve plies. The agent searches depth 1, 2, 3, ... and keeps the last result that finished within the time budget. The default budget is 180 seconds and the maximum is 210, which leaves time to copy and post.
+Depth 12 is a ceiling, not a promise to finish twelve plies. The agent searches depth 1, 2, 3, ... and keeps the last result that finished within the time budget. The default budget is 180 seconds. There is no maximum, but above 210 seconds the agent prints a warning: the 4 minutes start at the opponent's post, so pasting their move and posting yours both come out of the same window.
+
+The search uses every CPU core by default. Use `--workers N` to choose how many processes; `--workers 1` searches in one process and picks the same move. If worker processes cannot start, the console says so and uses one process.
 
 Every new game gets its own session JSON in `out/tournament-console/`, and the path is printed in Terminal. To resume, run the console and choose `resume`, or:
 
@@ -142,3 +144,15 @@ python3 programs/TournamentAgent.py examples/empty_board.txt out/move.txt 6 whit
 Without history, the program cannot validate the opponent's prior move or recognize earlier repetitions; track those manually. It never infers the opening phase from piece counts.
 
 Only post an output after a successful exit (code 0). Diagnostics such as completed depth go to stderr. A failed command may leave an old output file in place; never mistake it for a new decision.
+
+## Parallel search measurements
+
+Measured on a 14-core Mac with `python3 tools/benchmark.py`. Time to finish depth 7, with the same move and value at both worker counts:
+
+| Board | Root moves | 1 worker | 14 workers |
+| --- | --- | --- | --- |
+| Opening, empty board | 23 | 86.5 s | 22.9 s |
+| Midgame, random position | 8 | 19.5 s | 9.1 s |
+| Midgame, handout position 2 | 5 | 4.8 s | 3.2 s |
+
+The speedup depends on the number of root moves: each root move runs on one core, so a position with 5 moves cannot use 14 cores. Each extra depth costs several times the previous one, so this gains about one depth at best within 180 seconds. Run the benchmark on the match machine before official games.

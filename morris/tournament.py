@@ -199,11 +199,21 @@ SESSION_DIR = Path(__file__).resolve().parents[1] / 'out' / 'tournament-console'
 HEADER = re.compile(r'Move\s+(\d+)\s*[-–—]\s*(White|Black)', re.IGNORECASE)
 
 
+POSTING_MARGIN_SECONDS = 210  # Above this, little of the 4 minutes is left to paste and post.
+
+
 def check_settings(seconds, depth):
-    if not math.isfinite(seconds) or not 0.01 <= seconds <= 210:
-        raise ValueError('Search time must be between 0.01 and 210 seconds.')
+    if not math.isfinite(seconds) or seconds < 0.01:
+        raise ValueError('Search time must be at least 0.01 seconds.')
     if not 1 <= depth <= 100:
         raise ValueError('Depth ceiling must be between 1 and 100.')
+
+
+def time_warning(seconds):
+    if seconds > POSTING_MARGIN_SECONDS:
+        return (f'Warning: a {seconds:g}s search leaves little or no time to paste and post '
+                f'within the 4 minutes after the opponent posts.')
+    return None
 
 
 def save_session(path, session):
@@ -305,6 +315,8 @@ def play_session(session, path, read=input, write=print, chooser=choose_move):
                 save_session(path, updated)
                 session.update(updated)
                 write(f'Next searches get up to {seconds:g} seconds.')
+                if time_warning(seconds):
+                    write(time_warning(seconds))
             except ValueError as exc:
                 write(str(exc))
             continue
@@ -363,8 +375,8 @@ def run_console(resume=None, seconds=None, depth=None):
         else:
             color = ask('Your color [white/black]: ', str.lower, lambda s: s in ('white', 'black'))
             if seconds is None:
-                seconds = ask('Search seconds [0.01..210, Enter=180; use 2 for practice]: ', float,
-                              lambda n: math.isfinite(n) and 0.01 <= n <= 210, 180.0)
+                seconds = ask('Search seconds [Enter=180; use 2 for practice]: ', float,
+                              lambda n: math.isfinite(n) and n >= 0.01, 180.0)
             if depth is None:
                 depth = ask('Maximum depth [1..100, Enter=12]: ', int, lambda n: 1 <= n <= 100, 12)
             check_settings(seconds, depth)
@@ -373,6 +385,8 @@ def run_console(resume=None, seconds=None, depth=None):
             session = {'version': 1, 'color': color, 'seconds': seconds, 'depth': depth,
                        'history': [initial_state()]}
         save_session(path, session)
+        if time_warning(session['seconds']):
+            print(time_warning(session['seconds']))
         play_session(session, path)
         return 0
     except (KeyboardInterrupt, EOFError):

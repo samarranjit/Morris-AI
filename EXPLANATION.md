@@ -115,7 +115,21 @@ a cooperative deadline: one generator/evaluator call and I/O can extend slightly
 past it. It is not an operating-system hard real-time guarantee. Leave time for
 copying and posting. The runner counts all actual evaluations, including its
 fallback, completed iterations, and an interrupted iteration; this differs from
-the fixed-depth assignment programs' single-search counts.
+the fixed-depth assignment programs' single-search counts. With worker
+processes, evaluations from an interrupted depth are not counted.
+
+With more than one worker (`--workers`, default every CPU core), depths 2 and
+up run in parallel code inside `programs/TournamentAgent.py`, so the agent
+can be shared as that file plus the `morris/` package. The root moves are
+split across processes; each process runs alpha-beta with the same rules,
+move order, and cutoffs as `morris/search.py` on its moves. The most promising root
+move is searched first, and the best root score so far is shared, so the other
+moves are searched with that alpha and prune like the sequential search. An
+earlier generated move is searched with alpha one below the shared best, so a
+tie still goes to the first generated move. The chosen board and value are
+therefore the same as sequential alpha-beta; only the evaluation count and
+speed differ. If processes cannot start or a worker dies, the search continues
+in one process.
 
 Tournament search knows how many of the 18 placements have been made. When a
 simulated line reaches placement 18, it switches move generation and evaluation

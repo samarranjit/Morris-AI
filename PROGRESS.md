@@ -18,7 +18,8 @@ All implementation stages are complete. What remains is in CHECKLIST.md under
 - Submission ZIP; all nine entry scripts passed from a fresh extraction.
 
 ## Latest verification
-- 57 automated tests passed.
+- 65 automated tests passed.
+- Tournament search can split root moves across every CPU core (inside programs/TournamentAgent.py; morris/ is unchanged), with the same move as one process.
 - Examples.txt regenerated from the submitted programs; every printed line matched.
 - Baseline estimator is byte-for-byte identical to the original.
 - Four equal-depth evaluator comparison games: improved won 3, drew 1.

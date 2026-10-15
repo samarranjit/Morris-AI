@@ -108,9 +108,13 @@ class ConsoleTests(unittest.TestCase):
         self.assertIn('Game over: draw', '\n'.join(self.output))
 
     def test_console_settings_reject_nonfinite_budgets(self):
-        for seconds in (float('nan'), float('inf'), 0, 211):
+        for seconds in (float('nan'), float('inf'), 0):
             with self.assertRaises(ValueError):
                 console.check_settings(seconds, 12)
+        for seconds in (240, 600):
+            console.check_settings(seconds, 12)
+            self.assertIn('Warning', console.time_warning(seconds))
+        self.assertIsNone(console.time_warning(180))
 
     def test_agent_without_board_arguments_opens_console(self):
         self.path.write_text(json.dumps(new_session('black')))
